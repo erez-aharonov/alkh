@@ -1,4 +1,4 @@
-# pyualg
+# alg4py
 python development using algorithms
 
 1. Static code analysis
