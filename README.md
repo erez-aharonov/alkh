@@ -1,4 +1,4 @@
-# pydusa
+# pyualg
 python development using algorithms
 
 1. Static code analysis
