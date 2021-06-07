@@ -1,5 +1,5 @@
 # pydusa
-python development using sophisticated algorithms
+python development using algorithms
 
 1. Static code analysis
 2. Dynamic code analysis
