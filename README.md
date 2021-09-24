@@ -1,5 +1,5 @@
-# alg4py
-python development using algorithms
+# khwarizmi
+systemtic python debugging using algorithms
 
 1. Static code analysis
 2. Dynamic code analysis
