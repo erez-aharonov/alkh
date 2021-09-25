@@ -1,4 +1,4 @@
-# khwarizmi
+# al-khwarizmi
 systemtic python debugging using algorithms
 
 1. Static code analysis
