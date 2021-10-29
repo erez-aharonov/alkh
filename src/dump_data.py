@@ -1,8 +1,9 @@
-import copy
+# import copy
 import inspect
 import pandas as pd
 import types
 import re
+import pickle
 
 
 def dump_stack(pickle_file_path='dump.pkl'):
@@ -12,16 +13,16 @@ def dump_stack(pickle_file_path='dump.pkl'):
         raw_stack_df[~(raw_stack_df['file_path'].str.contains('ipython') |
                        raw_stack_df['file_path'].str.contains('pycharm') |
                        raw_stack_df['file_path'].str.contains('site') |
-                       raw_stack_df['file_path'].str.contains('al-khwarizmi/src/dump_data'))].copy()
+                       raw_stack_df['file_path'].str.contains('al_khwarizmi/src/dump_data'))].copy()
     relevant_stack_df['locals'] = _get_data_frame_locals(relevant_stack_df)
     locals_stack_df = relevant_stack_df[['file_path', 'function', 'lineno', 'locals']].reset_index(drop=True)
     locals_stack_df.to_pickle(pickle_file_path)
 
 
 def _get_data_frame_locals(df):
-    def _remove_reserved_locals(locals_dict):
-        locals_dict_copy = copy.copy(locals_dict)
+    def _get_relevant_locals(locals_dict):
         list_to_remove = [
+            'self',
             '__name__',
             '__doc__',
             '__package__',
@@ -45,28 +46,27 @@ def _get_data_frame_locals(df):
             '_ii',
             '_iii']
 
+        relevant_locals_dict = {}
+
         for key in locals_dict.keys():
-            if re.search('_i[0-9]+', key):
-                del locals_dict_copy[key]
+            cond1 = not re.search('_i[0-9]+', key)
+            cond2 = key not in list_to_remove
+            cond3 = not isinstance(locals_dict[key], types.ModuleType)
+            cond4 = not isinstance(locals_dict[key], types.FunctionType)
+            cond5 = not isinstance(locals_dict[key], type)
+            if cond1 and cond2 and cond3 and cond4 and cond5:
+                try:
+                    pickle.dumps(locals_dict[key])
+                    relevant_locals_dict[key] = locals_dict[key]
+                except (pickle.PickleError, TypeError):
+                    pass
 
-        for key in list_to_remove:
-            if key in locals_dict_copy.keys():
-                del locals_dict_copy[key]
-
-        return locals_dict_copy
-
-    def _remove_functions(locals_dict):
-        locals_dict_copy = copy.copy(locals_dict)
-        for key in locals_dict.keys():
-            if isinstance(locals_dict_copy[key], types.FunctionType):
-                del locals_dict_copy[key]
-        return locals_dict_copy
+        return relevant_locals_dict
 
     def _get_frame_locals(a_frame):
         frame_locals = a_frame.frame.f_locals
-        frame_locals_2 = _remove_reserved_locals(frame_locals)
-        frame_locals_3 = _remove_functions(frame_locals_2)
-        return frame_locals_3
+        frame_locals_2 = _get_relevant_locals(frame_locals)
+        return frame_locals_2
 
     locals_series = df['frame'].apply(_get_frame_locals)
     return locals_series
