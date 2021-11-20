@@ -86,7 +86,6 @@ def _get_keys(a_dict: dict):
 def _get_data_frame_locals(df):
     def _get_relevant_locals(locals_dict):
         list_to_remove = [
-            'self',
             '__name__',
             '__doc__',
             '__package__',
