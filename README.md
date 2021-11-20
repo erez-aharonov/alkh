@@ -5,4 +5,4 @@ systemtic python debugging using algorithms
 
 import alkh
 
-alkh.take_it_offline('path-of-notebooks')
+alkh.take_it_offline('path-of-notebooks-directory')
