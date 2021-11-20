@@ -60,7 +60,7 @@ def _make_stack_df(stack):
         raw_stack_df[~(raw_stack_df['file_path'].str.contains('ipython') |
                        raw_stack_df['file_path'].str.contains('pycharm') |
                        raw_stack_df['file_path'].str.contains('site') |
-                       raw_stack_df['file_path'].str.contains('alkh/src/dump_data.py'))].copy()
+                       raw_stack_df['file_path'].str.contains('alkh/core/dump_data.py'))].copy()
     relevant_stack_df['locals'] = _get_data_frame_locals(relevant_stack_df)
     relevant_stack_df['locals_names'] = relevant_stack_df['locals'].apply(_get_keys)
     stack_df = relevant_stack_df[['file_path', 'function', 'lineno', 'locals_names', 'locals']].reset_index(drop=True)
