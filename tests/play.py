@@ -1,4 +1,5 @@
 import pandas as pd
+from alkh.tests2 import play_imports
 
 a = 10
 
@@ -10,7 +11,10 @@ def do_something():
 
 def do_something_else(df):
     c = a + 5
-    return c
+    some_object = play_imports.A()
+    some_object.run()
+    df_2 = df + c
+    return df_2
 
 
 d = do_something()
