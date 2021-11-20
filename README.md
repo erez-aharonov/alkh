@@ -1,6 +1,7 @@
 # alkh [al-khwarizmi]
 systemtic python debugging using algorithms
 
-1. Static code analysis
-2. Dynamic code analysis
-3. Graph algorithms
+1. Convert your stack to jupyter notebook
+
+import alkh
+alkh.take_it_offline('path-of-notebooks')
