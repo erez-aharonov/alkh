@@ -8,6 +8,7 @@ import os
 import uuid
 from typing import *
 import sys
+import copy
 
 
 def take_it_offline(notebook_dir_path: Optional[str] = None):
@@ -25,6 +26,7 @@ def take_it_offline(notebook_dir_path: Optional[str] = None):
 
     notebook = _create_notebook_object(stack_df, sys_path_list, pickle_file_name)
     nbf.write(notebook, notebook_path)
+    print(f"notebook file {notebook_path} has been created")
 
 
 def _create_notebook_object(stack_df, sys_path_list, pickle_file_name):
@@ -117,8 +119,11 @@ def _get_data_frame_locals(df):
             cond3 = not isinstance(locals_dict[key], types.ModuleType)
             cond4 = not isinstance(locals_dict[key], types.FunctionType)
             cond5 = not isinstance(locals_dict[key], type)
-            if cond1 and cond2 and cond3 and cond4 and cond5:
+            cond6 = not re.search('__py_debug_temp_var', key)
+            if cond1 and cond2 and cond3 and cond4 and cond5 and cond6:
                 try:
+                    if key == 'self':
+                        locals_dict[key] = _get_picklable_object(locals_dict[key])
                     pickle.dumps(locals_dict[key])
                     relevant_locals_dict[key] = locals_dict[key]
                 except (pickle.PickleError, TypeError):
@@ -159,3 +164,16 @@ def _create_numbers_with_lines_list(context_lines_list, line_numbers_list):
         final_line = f"{line_number}: {context_line.rstrip()}"
         numbers_with_lines_list.append(final_line)
     return numbers_with_lines_list
+
+
+def _get_picklable_object(an_object):
+    object_copy = copy.copy(an_object)
+    keys_to_delete = []
+    for key in object_copy.__dict__:
+        try:
+            pickle.dumps(object_copy.__dict__[key])
+        except:
+            keys_to_delete.append(key)
+    for key in keys_to_delete:
+        del object_copy.__dict__[key]
+    return object_copy
