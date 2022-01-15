@@ -1,5 +1,5 @@
 import pandas as pd
-from alkh.tests2 import play_imports
+from tests2 import play_imports
 
 a = 10
 

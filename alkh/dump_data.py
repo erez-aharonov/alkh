@@ -126,7 +126,7 @@ def _get_data_frame_locals(df):
                         locals_dict[key] = _get_picklable_object(locals_dict[key])
                     pickle.dumps(locals_dict[key])
                     relevant_locals_dict[key] = locals_dict[key]
-                except (pickle.PickleError, TypeError):
+                except (pickle.PickleError, TypeError, AttributeError):
                     pass
 
         return relevant_locals_dict

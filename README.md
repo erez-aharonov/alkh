@@ -6,3 +6,14 @@ systemtic python debugging using algorithms
 import alkh
 
 alkh.take_it_offline('path-of-notebooks-directory')
+
+or
+
+bash:
+export ALKH_NOTEBOOKS_PATH='path-to-notebooks-directory'
+
+python:
+import alkh
+alkh.take_it_offline()
+
+![stack to jupyter notebook](alkh.png)
