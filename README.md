@@ -15,6 +15,7 @@ alkh.take_it_offline('path-of-notebooks-directory')
 or
 
 bash:
+
 export ALKH_NOTEBOOKS_PATH='path-to-notebooks-directory'
 
 python:
