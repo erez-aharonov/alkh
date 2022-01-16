@@ -1,6 +1,11 @@
 # alkh [al-khwarizmi]
 systemtic python debugging using algorithms
 
+## Installation
+pip instal alkh
+
+## Usage
+
 1. Convert your stack to jupyter notebook
 
 import alkh
@@ -16,4 +21,7 @@ python:
 import alkh
 alkh.take_it_offline()
 
-![stack to jupyter notebook](alkh.png)
+## Example
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/alkh.png?raw=true)
+
+
