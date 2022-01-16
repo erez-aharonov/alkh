@@ -2,7 +2,7 @@
 systemtic python debugging using algorithms
 
 ## Installation
-pip instal alkh
+pip install alkh
 
 ## Usage
 
