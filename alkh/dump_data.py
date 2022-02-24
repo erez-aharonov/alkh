@@ -46,6 +46,7 @@ import alkh"""
     read_pickle_and_display_text = f"""stack_df = pd.read_pickle('{pickle_file_name}')
 stack_df[["file_path", "function", "lineno", "locals_names"]]"""
     read_pickle_and_display = nbf.v4.new_code_cell(read_pickle_and_display_text)
+
     stack_cells = []
     for index, _ in stack_df.iterrows():
         stack_cells.append(nbf.v4.new_code_cell(f"alkh.print_context(stack_df.loc[{index}, \'context\'])"))
@@ -73,7 +74,7 @@ def _make_stack_df(stack):
         raw_stack_df[~(raw_stack_df['file_path'].str.contains('ipython') |
                        raw_stack_df['file_path'].str.contains('pycharm') |
                        raw_stack_df['file_path'].str.contains('site') |
-                       raw_stack_df['file_path'].str.contains('alkh/core/dump_data.py'))].copy()
+                       raw_stack_df['file_path'].str.contains('alkh/dump_data.py'))].copy()
     relevant_stack_df['locals'] = _get_data_frame_locals(relevant_stack_df)
     relevant_stack_df['locals_names'] = relevant_stack_df['locals'].apply(_get_keys)
     stack_df = relevant_stack_df[['file_path', 'function', 'lineno', 'locals_names', 'locals']].reset_index(drop=True)
