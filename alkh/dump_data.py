@@ -121,7 +121,8 @@ def _get_data_frame_locals(df):
             cond4 = not isinstance(locals_dict[key], types.FunctionType)
             cond5 = not isinstance(locals_dict[key], type)
             cond6 = not re.search('__py_debug_temp_var', key)
-            if cond1 and cond2 and cond3 and cond4 and cond5 and cond6:
+            cond7 = not re.search('_[0-9]', key)
+            if cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7:
                 try:
                     if key == 'self':
                         locals_dict[key] = _get_picklable_object(locals_dict[key])
