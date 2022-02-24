@@ -1,5 +1,5 @@
 import pandas as pd
-from tests2 import play_imports
+from tests import play_imports
 
 a = 10
 
