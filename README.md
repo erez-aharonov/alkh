@@ -1,12 +1,11 @@
 # alkh [al-khwarizmi]
-systemtic python debugging using algorithms
+### Algorithmic python debugging
+### Convert your debugger stack to jupyter notebook
 
 ## Installation
 pip install alkh
 
 ## Usage
-
-1. Convert your stack to jupyter notebook
 
 import alkh
 
