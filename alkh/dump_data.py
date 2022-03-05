@@ -167,6 +167,7 @@ def _get_data_frame_locals(df):
                     pickle.dumps(locals_dict[key])
                     relevant_locals_dict[key] = locals_dict[key]
                 except (pickle.PickleError, TypeError, AttributeError):
+                    print(f"couldn't pickle variable: {key}")
                     pass
 
         return relevant_locals_dict
