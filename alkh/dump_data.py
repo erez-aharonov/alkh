@@ -82,7 +82,7 @@ def _create_user_packages_import_string(import_packages_list, stack_df):
 def _create_append_to_sys_path_string(sys_path_list):
     append_to_sys_path_list = ["import sys"]
     for index, path_to_append in enumerate(sys_path_list):
-        append_to_sys_path_list.append(f"sys.path.insert({index}, \'{path_to_append}\')")
+        append_to_sys_path_list.append(f"sys.path.insert({index}, r\'{path_to_append}\')")
     append_to_sys_path_str = "\n".join(append_to_sys_path_list)
     return append_to_sys_path_str
 
