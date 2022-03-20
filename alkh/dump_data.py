@@ -72,7 +72,7 @@ def _create_user_packages_import_string(import_packages_list, stack_df):
     all_imports_lines_list = []
     for file_path in file_paths_list:
         all_lines = open(file_path, 'r').readlines()
-        imports_lines_list = [line.strip() for line in all_lines if 'import ' in line]
+        imports_lines_list = [line.strip() for line in all_lines if (' import ' in line or line.startswith('import '))]
         all_imports_lines_list += imports_lines_list
     final_import_lines_list = list(set(all_imports_lines_list).difference(set(import_packages_list)))
     user_packages_import_string = "\n".join(final_import_lines_list)
@@ -108,11 +108,9 @@ def _get_notebook_dir_path(notebook_dir_path: Optional[str]):
 def _make_stack_df(stack):
     stack_tuples_list = [(frame.filename, frame.function, frame.lineno, frame) for frame in stack]
     raw_stack_df = pd.DataFrame(stack_tuples_list, columns=['file_path', 'function', 'lineno', 'frame'])
-    relevant_stack_df = \
-        raw_stack_df[~(raw_stack_df['file_path'].str.contains('ipython') |
-                       raw_stack_df['file_path'].str.contains('pycharm') |
-                       raw_stack_df['file_path'].str.contains('site') |
-                       raw_stack_df['file_path'].str.contains('alkh/dump_data.py'))].copy()
+    ignore_stack_list = ['ipython', 'pycharm', 'site-packages', 'pydev', r'alkh\\dump_data.py', 'alkh/dump_data.py']
+    relevant_stack_df = raw_stack_df[~raw_stack_df['file_path'].str.contains('|'.join(ignore_stack_list))].copy()
+    print(relevant_stack_df['file_path'].tolist())
     relevant_stack_df['locals'] = _get_data_frame_locals(relevant_stack_df)
     relevant_stack_df['locals_names'] = relevant_stack_df['locals'].apply(_get_keys)
     stack_df = relevant_stack_df[['file_path', 'function', 'lineno', 'locals_names', 'locals']].reset_index(drop=True)
@@ -152,6 +150,8 @@ def _get_data_frame_locals(df):
 
         relevant_locals_dict = {}
 
+        keys_not_pickled_list = []
+
         for key in locals_dict.keys():
             cond1 = not re.search('_i[0-9]+', key)
             cond2 = key not in list_to_remove
@@ -167,8 +167,12 @@ def _get_data_frame_locals(df):
                     pickle.dumps(locals_dict[key])
                     relevant_locals_dict[key] = locals_dict[key]
                 except (pickle.PickleError, TypeError, AttributeError):
-                    print(f"couldn't pickle variable: {key}")
+                    keys_not_pickled_list.append(key)
                     pass
+
+        if keys_not_pickled_list:
+            keys_not_pickled_set = set(keys_not_pickled_list)
+            print(f"couldn't pickle variables: {keys_not_pickled_set}")
 
         return relevant_locals_dict
 
