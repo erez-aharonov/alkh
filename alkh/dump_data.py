@@ -110,7 +110,6 @@ def _make_stack_df(stack):
     raw_stack_df = pd.DataFrame(stack_tuples_list, columns=['file_path', 'function', 'lineno', 'frame'])
     ignore_stack_list = ['ipython', 'pycharm', 'site-packages', 'pydev', r'alkh\\dump_data.py', 'alkh/dump_data.py']
     relevant_stack_df = raw_stack_df[~raw_stack_df['file_path'].str.contains('|'.join(ignore_stack_list))].copy()
-    print(relevant_stack_df['file_path'].tolist())
     relevant_stack_df['locals'] = _get_data_frame_locals(relevant_stack_df)
     relevant_stack_df['locals_names'] = relevant_stack_df['locals'].apply(_get_keys)
     stack_df = relevant_stack_df[['file_path', 'function', 'lineno', 'locals_names', 'locals']].reset_index(drop=True)
