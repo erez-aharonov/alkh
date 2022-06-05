@@ -26,7 +26,7 @@ def take_it_offline(notebook_dir_path: Optional[str] = None):
 
     notebook = _create_notebook_object(stack_df, sys_path_list, pickle_file_name)
     nbf.write(notebook, notebook_path)
-    print(f"[{pickle_file_name}] notebook file {notebook_path} has been created")
+    print(f"[{random_name}] notebook file {notebook_path} has been created")
 
 
 def _create_notebook_object(stack_df, sys_path_list, pickle_file_name):
