@@ -26,7 +26,7 @@ def take_it_offline(notebook_dir_path: Optional[str] = None):
 
     notebook = _create_notebook_object(stack_df, sys_path_list, pickle_file_name)
     nbf.write(notebook, notebook_path)
-    print(f"notebook file {notebook_path} has been created")
+    print(f"[{pickle_file_name}] notebook file {notebook_path} has been created")
 
 
 def _create_notebook_object(stack_df, sys_path_list, pickle_file_name):
@@ -53,14 +53,16 @@ stack_df[["file_path", "function", "lineno", "locals_names"]]"""
         stack_cells.append(nbf.v4.new_code_cell(f"alkh.print_context(stack_df.loc[{index}, \'context\'])"))
         stack_cells.append(nbf.v4.new_code_cell(f"stack_df.loc[{index}, \'locals\']"))
         variables_cell_string = _get_variables_cell_string(index, stack_layer_series)
-        stack_cells.append(nbf.v4.new_code_cell(variables_cell_string))
+        if variables_cell_string:
+            stack_cells.append(nbf.v4.new_code_cell(variables_cell_string))
 
     head_cells_list = [
         intro_markdown,
         append_to_sys_path_cell,
-        import_packages,
-        user_packages_import,
-        read_pickle_and_display]
+        import_packages]
+    if user_packages_import_string:
+        head_cells_list.append(user_packages_import)
+    head_cells_list.append(read_pickle_and_display)
 
     cells_list = head_cells_list + stack_cells
     notebook['cells'] = cells_list
@@ -145,20 +147,22 @@ def _get_data_frame_locals(df):
             '___',
             '_i',
             '_ii',
-            '_iii']
+            '_iii',
+            '__annotations__',
+            '__cached__']
 
         relevant_locals_dict = {}
 
         keys_not_pickled_list = []
 
         for key in locals_dict.keys():
-            cond1 = not re.search('_i[0-9]+', key)
+            cond1 = not re.search('^_i[0-9]+', key)
             cond2 = key not in list_to_remove
             cond3 = not isinstance(locals_dict[key], types.ModuleType)
             cond4 = not isinstance(locals_dict[key], types.FunctionType)
             cond5 = not isinstance(locals_dict[key], type)
             cond6 = not re.search('__py_debug_temp_var', key)
-            cond7 = not re.search('_[0-9]', key)
+            cond7 = not re.search('^_[0-9]', key)
             if cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7:
                 try:
                     if key == 'self':
