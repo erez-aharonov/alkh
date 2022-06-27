@@ -1,5 +1,3 @@
-#ARG ROOT_CONTAINER=ubuntu:focal
-#ARG ROOT_CONTAINER=ubuntu:bionic
 ARG ROOT_CONTAINER=python:3.6.0-slim
 
 FROM $ROOT_CONTAINER
@@ -21,7 +19,6 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 RUN mkdir /app/tests
 COPY tests/* /app/tests/
 RUN python /app/tests/dump_data_test.py
-#RUN ls /usr/bin/
 RUN which python
 RUN pip list
 
