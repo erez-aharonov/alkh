@@ -9,6 +9,7 @@ setup(
     name="alkh",
     version="0.1.3",
     description="algorithmic python debugging",
+    python_requires='>=3.6.0',
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/erez-aharonov/alkh",
