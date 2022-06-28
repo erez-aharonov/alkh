@@ -5,11 +5,25 @@
 ## Installation
 pip install alkh
 
+## API
+
+function name: take_it_offline
+
+parameters:
+
+notebook_dir_path: Optional[str] = None, which directory to save the notebook
+
+levels: Optional[int] = 1, number of program stack to put in notebook 
+
 ## Usage
 
 import alkh
 
 alkh.take_it_offline('path-of-notebooks-directory')
+
+or 
+
+alkh.take_it_offline('path-of-notebooks-directory', levels=2)
 
 or
 
@@ -22,6 +36,10 @@ python:
 import alkh
 
 alkh.take_it_offline()
+
+or 
+
+alkh.take_it_offline(levels=2)
 
 ## Usage flow example
 Stop at breakpoint within PyCharm  
