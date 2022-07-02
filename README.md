@@ -11,9 +11,9 @@ function name: take_it_offline
 
 parameters:
 
-notebook_dir_path: Optional[str] = None, which directory to save the notebook
+notebook_dir_path: Optional[str] = None, directory path to save the notebook in
 
-levels: Optional[int] = 1, number of program stack to put in notebook 
+levels: Optional[int] = 1, number of program stack layers to put in notebook 
 
 ## Usage
 
