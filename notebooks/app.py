@@ -8,6 +8,9 @@ lines = open(file_path).read()
 prism_twilight_min_css_file_path = "./notebooks/prism-twilight.min.css"
 prism_twilight_min_css_string = open(prism_twilight_min_css_file_path).read()
 
+line_number = st.sidebar.text_input('line number')
+
+
 html = f"""
 <!DOCTYPE html>
 <html>
@@ -18,7 +21,7 @@ html = f"""
 </head>
 <body class="line-numbers"> 
 	<header data-plugin-header="line-highlight"></header>
-	<pre class="language-python" data-line="1, 6, 8, 9"><code>{lines}</code></pre>
+	<pre class="language-python" data-line="{line_number}"><code>{lines}</code></pre>
 	<script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/prism.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/plugins/autoloader/prism-autoloader.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/plugins/line-numbers/prism-line-numbers.min.js"></script>		
