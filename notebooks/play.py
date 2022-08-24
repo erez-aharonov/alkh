@@ -1,5 +1,6 @@
 class A:
     def __init__(self):
+        b = 8
         pass
 
     def run(self):
