@@ -7,7 +7,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="alkh",
-    version="0.1.3",
+    version="0.1.4",
     description="algorithmic python debugging",
     python_requires='>=3.6.0',
     long_description=README,
