@@ -10,6 +10,7 @@ class A:
         c = a + b + 3
         d = b + c
 
+
 class B:
     def __init__(self):
         b = 8
