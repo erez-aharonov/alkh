@@ -1,5 +1,6 @@
 import pathlib
 from setuptools import setup
+from setuptools import find_packages
 
 HERE = pathlib.Path(__file__).parent
 
@@ -7,9 +8,9 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="alkh",
-    version="0.1.4",
+    version="0.1.4.1",
     description="algorithmic python debugging",
-    python_requires='>=3.6.0',
+    python_requires='>=3.7.2',
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/erez-aharonov/alkh",
@@ -24,7 +25,14 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    packages=["alkh"],
-    include_package_data=False,
-    install_requires=["pandas>=0.21.0", "nbformat>=5.1.3"],
+    # packages=["alkh"],
+    packages=find_packages(),
+    package_data={"alkh": ["assets/css/*.css", "assets/scripts/*.js"]},
+    include_package_data=True,
+    install_requires=[
+        "pandas>=0.21.0",
+        "nbformat>=5.1.3",
+        "streamlit>=1.12.0",
+        "libcst>=0.4.7",
+        "networkx>=2.5.1"],
 )

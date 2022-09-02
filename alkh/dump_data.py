@@ -56,7 +56,6 @@ stack_df[["file_path", "function", "lineno", "locals_names"]]"""
     stack_cells = []
     for index, stack_layer_series in stack_to_add_df.iterrows():
         stack_cells.append(nbf.v4.new_code_cell(f"alkh.print_context(stack_df.loc[{index}, \'context\'])"))
-        stack_cells.append(nbf.v4.new_code_cell(f"stack_df.loc[{index}, \'locals\']"))
         variables_cell_string = _get_variables_cell_string(index, stack_layer_series)
         if variables_cell_string:
             stack_cells.append(nbf.v4.new_code_cell(variables_cell_string))
