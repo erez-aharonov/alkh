@@ -1,7 +1,7 @@
 # alkh [al-khwarizmi]
 ### Algorithmic python debugging
 ### 1. [Convert your debugger stack to jupyter notebook](#convert-your-debugger-stack-to-jupyter-notebook)
-### 2. [Focus on code pathways](#focus-on-code-pathways)
+### 2. [Focus on code pathways using web application](#focus-on-code-pathways-using-web-application)
 
 ## Installation
 pip install alkh
@@ -61,7 +61,7 @@ Run the notebook
 ![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-5.png?raw=true)
 
 
-## Focus on code pathways
+## Focus on code pathways using web application
 
 ### API
 
