@@ -1,21 +1,35 @@
 # alkh [al-khwarizmi]
 ### Algorithmic python debugging
-### Convert your debugger stack to jupyter notebook
+### 1. Convert your debugger stack to jupyter notebook
+### 2. Focus on code pathways
+
+[click on this link](#my-multi-word-header)
 
 ## Installation
 pip install alkh
 
-## API
+## Convert your debugger stack to jupyter notebook
+
+### API
 
 function name: take_it_offline
+
+description: create jupyter notebook based on the program stack 
 
 parameters:
 
 notebook_dir_path: Optional[str] = None, directory path to save the notebook in
 
-levels: Optional[int] = 1, number of program stack layers to put in notebook 
+levels: Optional[int] = 1, number of program stack layers to put in notebook
 
-## Usage
+</br></br>
+function name: analyze
+
+description: launches web application to analyze code pathways
+
+parameters:None
+
+### Usage
 
 import alkh
 
@@ -41,7 +55,7 @@ or
 
 alkh.take_it_offline(levels=2)
 
-## Usage flow example
+### Usage flow example
 Stop at breakpoint within PyCharm  
 ![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-0.png?raw=true)  
 Use Console to run code within debugger  
@@ -53,4 +67,24 @@ Run: alkh.take_it_offline('path-of-notebooks-directory')
 Start Jupyter  
 ![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-4.png?raw=true)  
 Run the notebook  
-![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-5.png?raw=true)  
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-5.png?raw=true)
+
+
+## Focus on code pathways
+
+### API
+
+function name: analyze
+
+description: launches web application to analyze code pathways
+
+parameters:None
+
+### Usage
+
+import alkh
+
+alkh.analyze()
+
+
+### My Multi Word Header
