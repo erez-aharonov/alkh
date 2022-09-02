@@ -77,3 +77,12 @@ import alkh
 
 alkh.analyze()
 
+### Usage flow example #1
+
+Stop at breakpoint within PyCharm  
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-0.png?raw=true)  
+Use Console to run code within debugger  
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-1.png?raw=true)  
+Run: import alkh  
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-2.png?raw=true)
+
