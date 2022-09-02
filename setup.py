@@ -25,7 +25,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
     ],
-    # packages=["alkh"],
     packages=find_packages(),
     package_data={"alkh": ["assets/css/*.css", "assets/scripts/*.js"]},
     include_package_data=True,
