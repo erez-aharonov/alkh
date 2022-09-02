@@ -3,8 +3,6 @@
 ### 1. [Convert your debugger stack to jupyter notebook](#convert-your-debugger-stack-to-jupyter-notebook)
 ### 2. [Focus on code pathways](#focus-on-code-pathways)
 
-[click on this link](#my-multi-word-header)
-
 ## Installation
 pip install alkh
 
@@ -86,5 +84,3 @@ import alkh
 
 alkh.analyze()
 
-
-### My Multi Word Header
