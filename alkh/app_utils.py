@@ -37,8 +37,8 @@ def get_full_code_html(lines_numbers_list, file_content):
     <pre class="language-python" data-line="{lines_numbers_string}"><code>{file_content}</code></pre>
     <script>{_read_script_file("prism.min.js")}</script>     
     <script>{_read_script_file("prism-line-numbers.min.js")}</script>
-    <script>{_read_script_file("prism-line-highlight.min.js")}</script>    
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/plugins/autoloader/prism-autoloader.min.js"></script>      
+    <script>{_read_script_file("prism-line-highlight.min.js")}</script> 
+    <script>{_read_script_file("prism-python.min.js")}</script>
 </body>
 </html>
 """
@@ -60,7 +60,7 @@ def get_focused_code_html(lines_numbers_list: List[int], file_lines_list: List[s
     <header data-plugin-header="line-highlight"></header>
     <pre class="language-python""><code>{file_content}</code></pre>
     <script>{_read_script_file("prism.min.js")}</script>
-    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.28.0/plugins/autoloader/prism-autoloader.min.js"></script>      
+    <script>{_read_script_file("prism-python.min.js")}</script>      
 </body>
 </html>
 """
