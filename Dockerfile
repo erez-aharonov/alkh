@@ -7,7 +7,7 @@ RUN pip install --upgrade setuptools
 RUN pip install wheel
 
 RUN mkdir /src
-ARG CACHE5=16
+ARG CACHE5=17
 COPY alkh /src/alkh
 COPY README.md /src/
 COPY setup.py /src/
