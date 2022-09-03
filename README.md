@@ -1,7 +1,10 @@
 # alkh [al-khwarizmi]
 ### Algorithmic python debugging
 ### 1. [Convert your debugger stack to jupyter notebook](#convert-your-debugger-stack-to-jupyter-notebook)
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-5.png?raw=true)
 ### 2. [Focus on code pathways using web application](#focus-on-code-pathways-using-web-application)
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-1.png?raw=true)
+
 
 ## Installation
 pip install alkh
@@ -89,3 +92,5 @@ Run: alkh.analyze(), this will open a web application
 ![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-0.png?raw=true)
 Analyze your code
 ![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-1.png?raw=true)
+
+### Usage flow example #2
