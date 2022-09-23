@@ -1,6 +1,7 @@
 from typing import *
 import libcst as cst
 import networkx as nx
+import numpy as np
 import pandas as pd
 
 
@@ -22,7 +23,7 @@ def get_variable_name(a_line: str):
 
 class CallGraphManager:
     def __init__(self, file_path):
-        self._call_graph, self._call_df = self._get_call_graph_with_df(file_path)
+        self._call_graph, self._call_df, self._scopes_df = self._get_call_graph_with_df(file_path)
 
     def get_variable_affecting_lines_numbers(self, line_number: str) -> List[int]:
         a_series = self._call_df.query(f"line == {line_number}").iloc[0]
@@ -30,6 +31,15 @@ class CallGraphManager:
         ancestors = nx.ancestors(self._call_graph, graph_node_name)
         ancestors_df = self._get_ancestors_call_df(ancestors, graph_node_name)
         lines_numbers_list = self._get_lines_numbers_list(ancestors_df)
+        scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
+        final_lines_numbers_list = list(np.sort(np.array(scope_hierarchy_starts_list + lines_numbers_list)))
+        return final_lines_numbers_list
+
+    @staticmethod
+    def _get_scope_hierarchy_starts_list(line_number, scopes_df):
+        c = scopes_df.query(f"start_line_number <= {line_number} and end_line_number >= {line_number}").sort_values(
+            "length")
+        lines_numbers_list = c.iloc[:-1]["start_line_number"].tolist()
         return lines_numbers_list
 
     def _get_ancestors_call_df(self, ancestors, graph_node_name):
@@ -52,9 +62,10 @@ class CallGraphManager:
         scopes_df["scope_index"] = range(len(scopes_df))
 
         di_graph, call_df = self._get_call_graph_with_df_from_objects(wrapper, ranges, scopes_df)
-        return di_graph, call_df
+        return di_graph, call_df, scopes_df
 
-    def _get_range(self, scope, file_number_of_lines, ranges):
+    @staticmethod
+    def _get_range(scope, file_number_of_lines, ranges):
         if isinstance(scope, cst.metadata.scope_provider.GlobalScope):
             start_line_number = 1
             end_line_number = file_number_of_lines
@@ -70,7 +81,6 @@ class CallGraphManager:
         return output_series
 
     def _get_call_graph_with_df_from_objects(self, wrapper, ranges, scopes_df) -> (nx.DiGraph, pd.DataFrame):
-        ranges = wrapper.resolve(cst.metadata.PositionProvider)
         visitor = FunctionCollector(ranges)
         wrapper.visit(visitor)
         call_df = pd.DataFrame(visitor.get_info(), columns=['assigned', 'data', 'line'])
@@ -80,7 +90,8 @@ class CallGraphManager:
         di_graph = self._create_di_graph_from_call_df(call_df)
         return di_graph, call_df
 
-    def _get_all_variables_names(self, call_df):
+    @staticmethod
+    def _get_all_variables_names(call_df):
         assigned_list = list(call_df.apply(lambda x: (x["assigned"], x["scope_index"]), axis=1))
         assigners_list = list(
             call_df.explode(['assigner']).dropna().apply(lambda x: (x["assigner"], x["scope_index"]), axis=1))
@@ -98,7 +109,8 @@ class CallGraphManager:
                     di_graph.add_edge((assigner, scope_index), (a_series['assigned'], scope_index))
         return di_graph
 
-    def _get_scope_index(self, line_number, scopes_df):
+    @staticmethod
+    def _get_scope_index(line_number, scopes_df):
         c = scopes_df.query(f"start_line_number <= {line_number} and end_line_number >= {line_number}").sort_values(
             "length")
         scope_index = c.iloc[0]['scope_index']
