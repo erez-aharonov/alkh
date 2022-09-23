@@ -21,7 +21,7 @@ if variable_name is None:
     lines_numbers_list = [line_number]
     lines_numbers_string = line_number
 else:
-    lines_numbers_list = call_graph_manager.get_variable_affecting_lines_numbers(variable_name)
+    lines_numbers_list = call_graph_manager.get_variable_affecting_lines_numbers(line_number)
     lines_numbers_string = ",".join(map(str, lines_numbers_list))
 
 st.sidebar.text(f"variable name: {variable_name}")

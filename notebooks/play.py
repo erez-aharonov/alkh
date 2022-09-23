@@ -3,8 +3,10 @@ alkh.analyze()
 
 
 class A:
+    k = 8
+
     def __init__(self):
-        b = 8
+        b = 8 + self.k
         pass
 
     def run(self):
@@ -13,6 +15,7 @@ class A:
         ll = a + 6.4
         c = a + b + 3
         d = b + c
+        k = d * 2
 
 
 class B:
