@@ -37,9 +37,14 @@ class CallGraphManager:
 
     @staticmethod
     def _get_scope_hierarchy_starts_list(line_number, scopes_df):
-        c = scopes_df.query(f"start_line_number <= {line_number} and end_line_number >= {line_number}").sort_values(
-            "length")
-        lines_numbers_list = c.iloc[:-1]["start_line_number"].tolist()
+        query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
+        all_scopes_df = scopes_df.query(query_string).sort_values("length")
+        relevant_rows_df = all_scopes_df.iloc[:-1]
+        temp_series = \
+            relevant_rows_df.apply(
+                lambda x: list(range(x["start_line_number"], x["header_end_line_number"] + 1)),
+                axis=1)
+        lines_numbers_list = list(temp_series.explode().sort_values())
         return lines_numbers_list
 
     def _get_ancestors_call_df(self, ancestors, graph_node_name):
@@ -70,13 +75,22 @@ class CallGraphManager:
             start_line_number = 1
             end_line_number = file_number_of_lines
             scope_name = 'global'
+            header_end_line_number = start_line_number
         else:
             start_line_number = ranges[scope.node].start.line
+            if hasattr(scope.node, 'decorators') and scope.node.decorators:
+                start_line_number = max([ranges[decorator].start.line for decorator in scope.node.decorators])
+
             end_line_number = ranges[scope.node].end.line
             scope_name = scope.name
+            header_end_line_number = start_line_number
+            if hasattr(scope.node, 'params') and scope.node.params:
+                header_end_line_number = ranges[scope.node.params].end.line
+            if hasattr(scope.node, 'returns') and scope.node.returns:
+                header_end_line_number = ranges[scope.node.returns].end.line
         scope_length = end_line_number - start_line_number + 1
-        values = [scope, start_line_number, end_line_number, scope_length, scope_name]
-        names = ["scope", "start_line_number", "end_line_number", "length", "name"]
+        values = [scope, start_line_number, end_line_number, header_end_line_number, scope_length, scope_name]
+        names = ["scope", "start_line_number", "end_line_number", "header_end_line_number", "length", "name"]
         output_series = pd.Series(values, index=names)
         return output_series
 

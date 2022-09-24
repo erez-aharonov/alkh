@@ -9,13 +9,17 @@ class A:
         b = 8 + self.k
         pass
 
-    def run(self):
+    @staticmethod
+    def run(
+            n)\
+            -> int:
         a = 5
         b = a + 7 + 5.0
         ll = a + 6.4
         c = a + b + 3
         d = b + c
-        k = d * 2
+        k = int(d * 2)
+        return k
 
 
 class B:

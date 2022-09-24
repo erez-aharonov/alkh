@@ -9,7 +9,9 @@ class A:
         b = 8 + self.k
         pass
 
-    def run(self):
+    @staticmethod
+    def run(
+            n):
         a = 5
         b = a + 7 + 5.0
         ll = a + 6.4
