@@ -129,7 +129,7 @@ class CallGraphManager:
         assigned_list = \
             list(call_df.apply(self._get_assigned_variable_scoped_named_tuple, axis=1))
         assigners_list = \
-            list(call_df.explode(['assigner']).dropna().apply(self._get_assigner_variable_scoped_named_tuple, axis=1))
+            list(call_df.explode('assigner').dropna().apply(self._get_assigner_variable_scoped_named_tuple, axis=1))
         return set(assigned_list + assigners_list)
 
     @staticmethod

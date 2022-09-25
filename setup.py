@@ -29,10 +29,17 @@ setup(
     package_data={"alkh": ["assets/css/*.css", "assets/scripts/*.js"]},
     include_package_data=True,
     install_requires=[
-        "numpy>=1.9.0",
-        "pandas>=0.21.0",
+        "numpy>=1.16.6",
+        "pandas>=0.25.0",
         "nbformat>=5.1.3",
         "streamlit>=1.12.0",
         "libcst>=0.4.7",
         "networkx>=2.5.1"],
+    # install_requires=[
+    #     "numpy==1.16.6",
+    #     "pandas==0.25.0",
+    #     "nbformat==5.1.3",
+    #     "streamlit==1.12.0",
+    #     "libcst==0.4.7",
+    #     "networkx==2.5.1"],
 )
