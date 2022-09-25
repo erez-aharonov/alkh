@@ -32,4 +32,4 @@ if focus_state == "off":
 else:
     html = app_utils.get_focused_code_html(lines_numbers_list, file_lines)
 
-components.html(html, height=800, scrolling=True)
+components.html(html, height=2000, scrolling=True)
