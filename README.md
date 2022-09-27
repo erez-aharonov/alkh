@@ -76,8 +76,7 @@ parameters:None
 
 ### Usage
 
-import alkh
-
+import alkh</br>
 alkh.analyze()
 
 ### Usage flow example
