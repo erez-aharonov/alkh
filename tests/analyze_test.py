@@ -1,5 +1,6 @@
 import alkh
 alkh.analyze()
+import pandas as pd
 
 
 class A:
@@ -7,6 +8,7 @@ class A:
 
     def __init__(self):
         b = 8 + self.k
+        df = pd.DataFrame({'b': b})
         pass
 
     @staticmethod

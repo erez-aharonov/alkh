@@ -80,17 +80,12 @@ import alkh
 
 alkh.analyze()
 
-### Usage flow example #1
+### Usage flow example
 
-Stop at breakpoint within PyCharm  
-![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-0.png?raw=true)  
-Use Console to run code within debugger  
-![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-1.png?raw=true)  
-Run: import alkh  
-![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/take-it-offline-2.png?raw=true)
-Run: alkh.analyze(), this will open a web application  
-![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-0.png?raw=true)
+Add two line to top of file
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-0.png?raw=true)  
+Run the file
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-1.png?raw=true)  
 Analyze your code
-![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-1.png?raw=true)
+![](https://github.com/erez-aharonov/alkh/blob/main/readme_files/analyze-2.png?raw=true)
 
-### Usage flow example #2
