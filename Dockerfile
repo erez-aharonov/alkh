@@ -7,13 +7,13 @@ RUN pip install --upgrade setuptools
 RUN pip install wheel
 
 RUN mkdir /src
-ARG CACHE5=22
+ARG CACHE5=24
 COPY alkh /src/alkh
 COPY README.md /src/
 COPY setup.py /src/
 WORKDIR /src/
 RUN python setup.py sdist bdist_wheel
-RUN pip install ./dist/alkh-0.1.4.1-py3-none-any.whl
+RUN pip install ./dist/alkh-0.1.4.3-py3-none-any.whl
 
 ENV TINI_VERSION v0.6.0
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini

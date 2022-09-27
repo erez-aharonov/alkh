@@ -25,7 +25,7 @@ class CallGraphManager:
     def __init__(self, file_path):
         self._call_graph, self._call_df, self._scopes_df = self._get_call_graph_with_df(file_path)
 
-    def get_variable_affecting_lines_numbers(self, line_number: str) -> List[int]:
+    def get_variable_affecting_lines_numbers(self, line_number: int) -> List[int]:
         a_series = self._call_df.query(f"line == {line_number}").iloc[0]
         graph_node_name = a_series['hash_name']
         ancestors = nx.ancestors(self._call_graph, graph_node_name)
@@ -186,7 +186,8 @@ class FunctionCollector(cst.CSTVisitor):
         collector = ValueCollector()
         node.value.visit(collector)
         value_dict = {'names': collector.names, 'ints': collector.ints, 'floats': collector.floats}
-        self._assign_info.append((node.targets[0].target.value, value_dict, pos.line))
+        if hasattr(node.targets[0].target, 'value'):
+            self._assign_info.append((node.targets[0].target.value, value_dict, pos.line))
 
 
 class ValueCollector(cst.CSTVisitor):
