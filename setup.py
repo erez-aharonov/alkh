@@ -6,7 +6,7 @@ HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text()
 
-debug_mode = True
+debug_mode = False
 
 install_requires = [
     "numpy>=1.16.6",
@@ -22,7 +22,7 @@ if debug_mode:
 
 setup(
     name="alkh",
-    version="0.1.4.3",
+    version="0.1.4.4",
     description="algorithmic python debugging",
     python_requires='>=3.7.2',
     long_description=README,
