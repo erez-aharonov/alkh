@@ -22,7 +22,7 @@ if debug_mode:
 
 setup(
     name="alkh",
-    version="0.1.4.5",
+    version="0.2.0",
     description="algorithmic python debugging",
     python_requires='>=3.7.2',
     long_description=README,
