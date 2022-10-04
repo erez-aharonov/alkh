@@ -193,15 +193,24 @@ class FunctionCollector(cst.CSTVisitor):
 class ValueCollector(cst.CSTVisitor):
     def __init__(self):
         super().__init__()
-        self.names: List[str] = []
+        self.names: List[Union[str, Tuple]] = []
         self.ints: List[str] = []
         self.floats: List[str] = []
+        self._inside_attribute = False
 
     def visit_Name(self, node: cst.FunctionDef) -> None:
-        self.names.append(node.value)
+        if not self._inside_attribute:
+            self.names.append(node.value)
 
     def visit_Integer(self, node: cst.FunctionDef) -> None:
         self.ints.append(node.value)
 
     def visit_Float(self, node: cst.FunctionDef) -> None:
         self.floats.append(node.value)
+
+    def visit_Attribute(self, node: cst.FunctionDef) -> None:
+        self._inside_attribute = True
+        self.names.append((node.value.value, node.attr.value))
+
+    def leave_Attribute(self, node: cst.FunctionDef) -> None:
+        self._inside_attribute = False

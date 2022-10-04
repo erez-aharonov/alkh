@@ -1,12 +1,14 @@
 import alkh
 alkh.analyze()
+import pandas as pd
 
 
 class A:
     k = 8
+    m = pd.Series({"c": 20})
 
     def __init__(self):
-        b = 8 + self.k
+        b = 8 + self.k + self.m.c
         pass
 
     @staticmethod
