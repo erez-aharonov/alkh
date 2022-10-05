@@ -123,14 +123,14 @@ class CallGraphManager:
 
     @staticmethod
     def _get_names_from_data(a_dict):
-        return a_dict['names']
+        return [".".join(j) for j in a_dict['names']]
 
     def _get_all_variables_names(self, call_df):
         assigned_list = \
             list(call_df.apply(self._get_assigned_variable_scoped_named_tuple, axis=1))
         assigners_list = \
             list(call_df.explode('assigner').dropna().apply(self._get_assigner_variable_scoped_named_tuple, axis=1))
-        return set(assigned_list + assigners_list)
+        return set(tuple(assigned_list) + tuple(assigners_list))
 
     @staticmethod
     def _get_assigned_variable_scoped_named_tuple(a_series) -> Tuple[str, int]:
@@ -193,14 +193,14 @@ class FunctionCollector(cst.CSTVisitor):
 class ValueCollector(cst.CSTVisitor):
     def __init__(self):
         super().__init__()
-        self.names: List[Union[str, Tuple]] = []
+        self.names: List[List] = []
         self.ints: List[str] = []
         self.floats: List[str] = []
-        self._inside_attribute = False
+        self._attribute_level = 0
 
     def visit_Name(self, node: cst.FunctionDef) -> None:
-        if not self._inside_attribute:
-            self.names.append(node.value)
+        if self._attribute_level == 0:
+            self.names.append([node.value])
 
     def visit_Integer(self, node: cst.FunctionDef) -> None:
         self.ints.append(node.value)
@@ -209,8 +209,11 @@ class ValueCollector(cst.CSTVisitor):
         self.floats.append(node.value)
 
     def visit_Attribute(self, node: cst.FunctionDef) -> None:
-        self._inside_attribute = True
-        self.names.append((node.value.value, node.attr.value))
+        self._attribute_level += 1
 
     def leave_Attribute(self, node: cst.FunctionDef) -> None:
-        self._inside_attribute = False
+        if isinstance(node.value, cst.Name):
+            self.names.append([node.value.value, node.attr.value])
+        else:
+            self.names[len(self.names) - 1].append(node.attr.value)
+        self._attribute_level -= 1
