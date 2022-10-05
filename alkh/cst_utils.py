@@ -154,9 +154,9 @@ class CallGraphManager:
 
     @staticmethod
     def _get_scope_index(line_number, scopes_df):
-        c = scopes_df.query(f"start_line_number <= {line_number} and end_line_number >= {line_number}").sort_values(
-            "length")
-        scope_index = c.iloc[0]['scope_index']
+        query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
+        relevant_scoped_df = scopes_df.query(query_string).sort_values("length")
+        scope_index = relevant_scoped_df.iloc[0]['scope_index']
         return scope_index
 
 
@@ -183,11 +183,18 @@ class FunctionCollector(cst.CSTVisitor):
 
     def visit_Assign(self, node: cst.FunctionDef) -> None:
         pos = self._ranges[node].start
-        collector = ValueCollector()
-        node.value.visit(collector)
-        value_dict = {'names': collector.names, 'ints': collector.ints, 'floats': collector.floats}
-        if hasattr(node.targets[0].target, 'value'):
-            self._assign_info.append((node.targets[0].target.value, value_dict, pos.line))
+        value_collector = ValueCollector()
+        node.value.visit(value_collector)
+        value_dict = {'names': value_collector.names, 'ints': value_collector.ints, 'floats': value_collector.floats}
+        for target in node.targets:
+            target_collector = ValueCollector()
+            target.visit(target_collector)
+            names_list = target_collector.names
+            if names_list:
+                target_name = ".".join(target_collector.names[0])
+                self._assign_info.append((target_name, value_dict, pos.line))
+        # if hasattr(node.targets[0].target, 'value'):
+        #     self._assign_info.append((node.targets[0].target.value, value_dict, pos.line))
 
 
 class ValueCollector(cst.CSTVisitor):

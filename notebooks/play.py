@@ -8,6 +8,7 @@ class A:
     m = pd.Series({"c": 20})
 
     def __init__(self):
+        self.k = 9
         b = 8 + self.k + self.m.c
         pass
 
