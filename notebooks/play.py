@@ -9,7 +9,7 @@ class A:
 
     def __init__(self):
         self.k, ll = 9, 10
-        b = 8 + self.k + self.m.c
+        b, mm = 8 + self.k + self.m.c, self.k
         pass
 
     @staticmethod
