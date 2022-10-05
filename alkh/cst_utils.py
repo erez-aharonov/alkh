@@ -193,8 +193,6 @@ class FunctionCollector(cst.CSTVisitor):
             if names_list:
                 target_name = ".".join(target_collector.names[0])
                 self._assign_info.append((target_name, value_dict, pos.line))
-        # if hasattr(node.targets[0].target, 'value'):
-        #     self._assign_info.append((node.targets[0].target.value, value_dict, pos.line))
 
 
 class ValueCollector(cst.CSTVisitor):
