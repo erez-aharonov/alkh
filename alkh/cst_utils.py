@@ -8,7 +8,7 @@ import pandas as pd
 def get_variable_name(a_line: str):
     try:
         line_cst = cst.parse_module(a_line.strip())
-        collector = AssignCollector()
+        collector = AssignedCollector()
         line_cst.visit(collector)
         if not collector.names:
             return None
@@ -23,12 +23,12 @@ def get_variable_name(a_line: str):
 
 class CallGraphManager:
     def __init__(self, file_path):
-        self._call_graph, self._call_df, self._scopes_df = self._get_call_graph_with_df(file_path)
+        self._dependency_graph, self._assignment_df, self._scopes_df = self._get_dependency_graph_with_df(file_path)
 
     def get_variable_affecting_lines_numbers(self, line_number: int) -> List[int]:
-        a_series = self._call_df.query(f"line == {line_number}").iloc[0]
+        a_series = self._assignment_df.query(f"line == {line_number}").iloc[0]
         graph_node_name = a_series['hash_name']
-        ancestors = nx.ancestors(self._call_graph, graph_node_name)
+        ancestors = nx.ancestors(self._dependency_graph, graph_node_name)
         ancestors_df = self._get_ancestors_call_df(ancestors, graph_node_name)
         lines_numbers_list = self._get_lines_numbers_list(ancestors_df)
         scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
@@ -55,13 +55,13 @@ class CallGraphManager:
         return list(range(a_series["start_line_number"], a_series["header_end_line_number"] + 1))
 
     def _get_ancestors_call_df(self, ancestors, graph_node_name):
-        return self._call_df[self._call_df['hash_name'].isin(ancestors.union({graph_node_name}))]
+        return self._assignment_df[self._assignment_df['hash_name'].isin(ancestors.union({graph_node_name}))]
 
     @staticmethod
     def _get_lines_numbers_list(ancestors_df: pd.DataFrame):
         return list(ancestors_df['line'].values)
 
-    def _get_call_graph_with_df(self, file_path: str) -> (nx.DiGraph, pd.DataFrame):
+    def _get_dependency_graph_with_df(self, file_path: str) -> (nx.DiGraph, pd.DataFrame):
         file_lines = open(file_path, 'r').readlines()
         file_content = open(file_path, 'r').read()
         wrapper = cst.metadata.MetadataWrapper(cst.parse_module(file_content))
@@ -69,8 +69,8 @@ class CallGraphManager:
         ranges = wrapper.resolve(cst.metadata.PositionProvider)
         file_number_of_lines = len(file_lines)
         scopes_df = self._calc_scopes_df(file_number_of_lines, ranges, scopes)
-        di_graph, call_df = self._get_call_graph_with_df_from_objects(wrapper, ranges, scopes_df)
-        return di_graph, call_df, scopes_df
+        di_graph, assignment_df = self._get_dependency_graph_with_df_from_objects(wrapper, ranges, scopes_df)
+        return di_graph, assignment_df, scopes_df
 
     def _calc_scopes_df(self, file_number_of_lines, ranges, scopes):
         scopes_series = pd.Series(list(scopes)).to_frame('scope')
@@ -111,15 +111,15 @@ class CallGraphManager:
             start_line_number = min([ranges[decorator].start.line for decorator in scope.node.decorators])
         return start_line_number
 
-    def _get_call_graph_with_df_from_objects(self, wrapper, ranges, scopes_df) -> (nx.DiGraph, pd.DataFrame):
-        visitor = FunctionCollector(ranges)
+    def _get_dependency_graph_with_df_from_objects(self, wrapper, ranges, scopes_df) -> (nx.DiGraph, pd.DataFrame):
+        visitor = AssignCollector(ranges)
         wrapper.visit(visitor)
-        call_df = pd.DataFrame(visitor.get_info(), columns=['assigned', 'data', 'line'])
-        call_df['assigner'] = call_df['data'].apply(self._get_names_from_data)
-        call_df["scope_index"] = call_df["line"].apply(self._get_scope_index, args=(scopes_df,))
-        call_df['hash_name'] = call_df.apply(self._get_assigned_variable_scoped_named_tuple, axis=1)
-        di_graph = self._create_di_graph_from_call_df(call_df)
-        return di_graph, call_df
+        assignment_df = pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'line'])
+        assignment_df['assigner'] = assignment_df['data'].apply(self._get_names_from_data)
+        assignment_df["scope_index"] = assignment_df["line"].apply(self._get_scope_index, args=(scopes_df,))
+        assignment_df['hash_name'] = assignment_df.apply(self._get_assigned_variable_scoped_named_tuple, axis=1)
+        dependency_graph = self._create_dependency_graph_from_assignment_df_df(assignment_df)
+        return dependency_graph, assignment_df
 
     @staticmethod
     def _get_names_from_data(a_dict):
@@ -140,7 +140,7 @@ class CallGraphManager:
     def _get_assigner_variable_scoped_named_tuple(a_series) -> Tuple[str, int]:
         return a_series["assigner"], a_series["scope_index"]
 
-    def _create_di_graph_from_call_df(self, call_df):
+    def _create_dependency_graph_from_assignment_df_df(self, call_df):
         var_names = self._get_all_variables_names(call_df)
         di_graph = nx.DiGraph()
         for name in var_names:
@@ -160,7 +160,7 @@ class CallGraphManager:
         return scope_index
 
 
-class AssignCollector(cst.CSTVisitor):
+class AssignedCollector(cst.CSTVisitor):
     def __init__(self):
         super().__init__()
         self.names: List[List] = []
@@ -170,9 +170,7 @@ class AssignCollector(cst.CSTVisitor):
         self.names.append(targets)
 
 
-class FunctionCollector(cst.CSTVisitor):
-    METADATA_DEPENDENCIES = (cst.metadata.PositionProvider,)
-
+class AssignCollector(cst.CSTVisitor):
     def __init__(self, ranges):
         super().__init__()
         self._ranges = ranges
@@ -191,8 +189,7 @@ class FunctionCollector(cst.CSTVisitor):
             target.visit(target_collector)
             names_list = target_collector.names
             if names_list:
-                target_name = ".".join(target_collector.names[0])
-                self._assign_info.append((target_name, value_dict, pos.line))
+                self._assign_info.append((target_collector.names, value_dict, pos.line))
 
 
 class ValueCollector(cst.CSTVisitor):
