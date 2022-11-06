@@ -23,7 +23,10 @@ def get_variable_name(a_line: str):
 
 class CallGraphManager:
     def __init__(self, file_path):
-        self._dependency_graph, self._assignment_df, self._scopes_df = self._get_dependency_graph_with_df(file_path)
+        self._calc_base_objects(file_path)
+        self._calc_scopes_df()
+        self._calc_assignment_df()
+        self._calc_dependency_graph()
 
     def get_variable_affecting_lines_numbers(self, line_number: int) -> List[int]:
         a_series = self._assignment_df.query(f"line == {line_number}").iloc[0]
@@ -37,6 +40,39 @@ class CallGraphManager:
                 lines_numbers_list,
                 scope_hierarchy_starts_list)
         return final_lines_numbers_list
+
+    def _calc_base_objects(self, file_path):
+        file_lines = open(file_path, 'r').readlines()
+        file_content = open(file_path, 'r').read()
+        wrapper = cst.metadata.MetadataWrapper(cst.parse_module(file_content))
+        scopes = set(wrapper.resolve(cst.metadata.ScopeProvider).values())
+        ranges = wrapper.resolve(cst.metadata.PositionProvider)
+        file_number_of_lines = len(file_lines)
+        self._wrapper = wrapper
+        self._scopes = scopes
+        self._ranges = ranges
+        self._file_number_of_lines = file_number_of_lines
+
+    def _calc_scopes_df(self):
+        scopes_df = self._calc_scopes_and_class_scopes_df(self._file_number_of_lines, self._ranges, self._scopes)
+        is_class_scope = scopes_df['scope'].apply(self._is_class_scope)
+        class_scopes_df = scopes_df[is_class_scope]
+        self._scopes_df = scopes_df
+        self._class_scopes_df = class_scopes_df
+
+    def _calc_assignment_df(self):
+        visitor = AssignCollector(self._ranges)
+        self._wrapper.visit(visitor)
+        assignment_df = pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'line'])
+        assignment_df['sources'] = assignment_df['data'].apply(self._get_sources_from_data)
+        assignment_df["scope_index"] = assignment_df["line"].apply(self._get_scope_index, args=(self._scopes_df,))
+        assignment_df['canonic_targets'] = assignment_df.apply(self._get_canonic_target_list, axis=1)
+        self._assignment_df = assignment_df
+
+    @staticmethod
+    def _is_class_scope(obj):
+        result = isinstance(obj, cst.metadata.scope_provider.ClassScope)
+        return result
 
     @staticmethod
     def _get_sorted_final_lines_numbers_list(lines_numbers_list, scope_hierarchy_starts_list):
@@ -61,18 +97,7 @@ class CallGraphManager:
     def _get_lines_numbers_list(ancestors_df: pd.DataFrame):
         return list(ancestors_df['line'].values)
 
-    def _get_dependency_graph_with_df(self, file_path: str) -> (nx.DiGraph, pd.DataFrame):
-        file_lines = open(file_path, 'r').readlines()
-        file_content = open(file_path, 'r').read()
-        wrapper = cst.metadata.MetadataWrapper(cst.parse_module(file_content))
-        scopes = set(wrapper.resolve(cst.metadata.ScopeProvider).values())
-        ranges = wrapper.resolve(cst.metadata.PositionProvider)
-        file_number_of_lines = len(file_lines)
-        scopes_df = self._calc_scopes_df(file_number_of_lines, ranges, scopes)
-        di_graph, assignment_df = self._get_dependency_graph_with_df_from_objects(wrapper, ranges, scopes_df)
-        return di_graph, assignment_df, scopes_df
-
-    def _calc_scopes_df(self, file_number_of_lines, ranges, scopes):
+    def _calc_scopes_and_class_scopes_df(self, file_number_of_lines, ranges, scopes):
         scopes_series = pd.Series(list(scopes)).to_frame('scope')
         scopes_df = scopes_series["scope"].apply(self._get_range, args=(file_number_of_lines, ranges))
         scopes_df["scope_index"] = range(len(scopes_df))
@@ -111,15 +136,9 @@ class CallGraphManager:
             start_line_number = min([ranges[decorator].start.line for decorator in scope.node.decorators])
         return start_line_number
 
-    def _get_dependency_graph_with_df_from_objects(self, wrapper, ranges, scopes_df) -> (nx.DiGraph, pd.DataFrame):
-        visitor = AssignCollector(ranges)
-        wrapper.visit(visitor)
-        assignment_df = pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'line'])
-        assignment_df['assigner'] = assignment_df['data'].apply(self._get_names_from_data)
-        assignment_df["scope_index"] = assignment_df["line"].apply(self._get_scope_index, args=(scopes_df,))
-        assignment_df['hash_name'] = assignment_df.apply(self._get_assigned_variable_scoped_named_tuple, axis=1)
-        dependency_graph = self._create_dependency_graph_from_assignment_df_df(assignment_df)
-        return dependency_graph, assignment_df
+    @staticmethod
+    def _get_sources_from_data(a_dict):
+        return a_dict['names']
 
     @staticmethod
     def _get_names_from_data(a_dict):
@@ -140,17 +159,18 @@ class CallGraphManager:
     def _get_assigner_variable_scoped_named_tuple(a_series) -> Tuple[str, int]:
         return a_series["assigner"], a_series["scope_index"]
 
-    def _create_dependency_graph_from_assignment_df_df(self, call_df):
-        var_names = self._get_all_variables_names(call_df)
+    def _calc_dependency_graph(self):
+        assignment_df = self._assignment_df
+        var_names = self._get_all_variables_names(assignment_df)
         di_graph = nx.DiGraph()
         for name in var_names:
             di_graph.add_node(name)
-        for index, a_series in call_df.iterrows():
+        for index, a_series in assignment_df.iterrows():
             scope_index = a_series["scope_index"]
             if a_series['assigner']:
                 for assigner in a_series['assigner']:
                     di_graph.add_edge((assigner, scope_index), (a_series['assigned'], scope_index))
-        return di_graph
+        self._dependency_graph = di_graph
 
     @staticmethod
     def _get_scope_index(line_number, scopes_df):
@@ -158,6 +178,25 @@ class CallGraphManager:
         relevant_scoped_df = scopes_df.query(query_string).sort_values("length")
         scope_index = relevant_scoped_df.iloc[0]['scope_index']
         return scope_index
+
+    def _get_canonic_target(self, target, line_number, scope_index):
+        if target[0] == 'self':
+            class_scope_index = self._get_scope_index(line_number, self._class_scopes_df)
+            canonic_target = tuple([class_scope_index] + target[1:])
+        else:
+            canonic_target = tuple([scope_index] + target)
+        return canonic_target
+
+    def _get_canonic_target_list(self, assignment_series):
+        scope_index = assignment_series['scope_index']
+        line_number = assignment_series['line']
+
+        canonic_target_list = []
+        for target in assignment_series['targets']:
+            canonic_target = self._get_canonic_target(target, line_number, scope_index)
+            canonic_target_list.append(canonic_target)
+
+        return canonic_target_list
 
 
 class AssignedCollector(cst.CSTVisitor):
