@@ -182,9 +182,11 @@ class CallGraphManager:
     def _get_canonic_target(self, target, line_number, scope_index):
         if target[0] == 'self':
             class_scope_index = self._get_scope_index(line_number, self._class_scopes_df)
-            canonic_target = tuple([class_scope_index] + target[1:])
+            target_id = tuple([class_scope_index] + target[1:])
+            canonic_target = {'self': True, 'scope_index':  class_scope_index, 'id': target_id}
         else:
-            canonic_target = tuple([scope_index] + target)
+            target_id = tuple([scope_index] + target)
+            canonic_target = {'self': False, 'scope_index':  scope_index, 'id': target_id}
         return canonic_target
 
     def _get_canonic_target_list(self, assignment_series):
