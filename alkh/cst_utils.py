@@ -187,6 +187,7 @@ class CallGraphManager:
         else:
             target_id = tuple([scope_index] + target)
             canonic_target = {'self': False, 'scope_index':  scope_index, 'id': target_id}
+        canonic_target["line_number"] = line_number
         return canonic_target
 
     def _get_canonic_target_list(self, assignment_series):

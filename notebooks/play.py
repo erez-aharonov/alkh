@@ -11,8 +11,11 @@ class A:
     k = 8
     m = pd.Series({"c": 20})
     m.c = 50
+    ll = 300
 
     def __init__(self):
+        self.m.c = 60
+        self.ll = 400
         self.k, ll = 9, 10 + jj
         b, mm = 8 + self.k + self.m.c, self.k
         pass
