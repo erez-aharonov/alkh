@@ -16,20 +16,24 @@ class CallGraphManager:
         target_id_to_line_numbers_df = self._target_id_to_line_numbers_df
         lines_contains_series = target_id_to_line_numbers_df['line_numbers_list'].apply(lambda x: line_number in x)
         line_targets_list = target_id_to_line_numbers_df[lines_contains_series]['target_id'].to_list()
-        lst = [nx.ancestors(self._dependency_graph, target) for target in line_targets_list]
-        influencing_targets_set = set().union(*lst)
-        relevant_targets_set = influencing_targets_set.union(set(line_targets_list))
-        is_relevant_targets_series = target_id_to_line_numbers_df['target_id'].apply(
-            lambda x: x in relevant_targets_set)
-        relevant_target_id_to_line_numbers_df = target_id_to_line_numbers_df[is_relevant_targets_series]
-        relevant_targets_lines = relevant_target_id_to_line_numbers_df[
-            'line_numbers_list'].explode().sort_values().unique().tolist()
+        if line_targets_list:
+            lst = [nx.ancestors(self._dependency_graph, target) for target in line_targets_list]
+            influencing_targets_set = set().union(*lst)
+            relevant_targets_set = influencing_targets_set.union(set(line_targets_list))
+            is_relevant_targets_series = target_id_to_line_numbers_df['target_id'].apply(
+                lambda x: x in relevant_targets_set)
+            relevant_target_id_to_line_numbers_df = target_id_to_line_numbers_df[is_relevant_targets_series]
+            relevant_targets_lines = relevant_target_id_to_line_numbers_df[
+                'line_numbers_list'].explode().sort_values().unique().tolist()
 
-        scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
-        final_lines_numbers_list = \
-            self._get_sorted_final_lines_numbers_list(
-                relevant_targets_lines,
-                scope_hierarchy_starts_list)
+            scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
+            final_lines_numbers_list = \
+                self._get_sorted_final_lines_numbers_list(
+                    relevant_targets_lines,
+                    scope_hierarchy_starts_list)
+
+        else:
+            final_lines_numbers_list = [line_number]
 
         return final_lines_numbers_list
 

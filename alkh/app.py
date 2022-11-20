@@ -17,8 +17,6 @@ call_graph_manager = cst_utils.CallGraphManager(file_path)
 line_number = st.sidebar.number_input('line number', min_value=1, max_value=len(file_lines))
 
 lines_numbers_list = call_graph_manager.get_lines_numbers_affecting_line_number(line_number)
-if not lines_numbers_list:
-    lines_numbers_list = [line_number]
 lines_numbers_string = ",".join(map(str, lines_numbers_list))
 
 focus_state = st.sidebar.radio("focus", ["off", "on"])
