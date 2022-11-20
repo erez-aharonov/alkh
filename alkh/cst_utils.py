@@ -26,7 +26,7 @@ class CallGraphManager:
             relevant_targets_lines = relevant_target_id_to_line_numbers_df[
                 'line_numbers_list'].explode().sort_values().unique().tolist()
 
-            scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
+            scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(relevant_targets_lines, self._scopes_df)
             final_lines_numbers_list = \
                 self._get_sorted_final_lines_numbers_list(
                     relevant_targets_lines,
@@ -137,13 +137,18 @@ class CallGraphManager:
     def _get_sorted_final_lines_numbers_list(lines_numbers_list, scope_hierarchy_starts_list):
         return list(np.sort(np.array(scope_hierarchy_starts_list + lines_numbers_list)))
 
-    def _get_scope_hierarchy_starts_list(self, line_number, scopes_df):
-        query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
-        all_scopes_df = scopes_df.query(query_string).sort_values("length")
-        relevant_rows_df = all_scopes_df.iloc[:-1]
-        temp_series = relevant_rows_df.apply(self._get_header_lines_numbers_range, axis=1)
-        lines_numbers_list = list(temp_series.explode().sort_values())
-        return lines_numbers_list
+    def _get_scope_hierarchy_starts_list(self, lines_numbers_list, scopes_df):
+        temp_total_lines_numbers_list = []
+        for line_number in lines_numbers_list:
+            query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
+            all_scopes_df = scopes_df.query(query_string).sort_values("length")
+            relevant_rows_df = all_scopes_df.iloc[:-1]
+            if not relevant_rows_df.empty:
+                temp_series = relevant_rows_df.apply(self._get_header_lines_numbers_range, axis=1)
+                lines_numbers_list = list(temp_series.explode().sort_values())
+                temp_total_lines_numbers_list += lines_numbers_list
+        final_lines_numbers_list = list(set(temp_total_lines_numbers_list))
+        return final_lines_numbers_list
 
     @staticmethod
     def _get_header_lines_numbers_range(a_series):

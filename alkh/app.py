@@ -18,12 +18,12 @@ line_number = st.sidebar.number_input('line number', min_value=1, max_value=len(
 
 lines_numbers_list = call_graph_manager.get_lines_numbers_affecting_line_number(line_number)
 lines_numbers_string = ",".join(map(str, lines_numbers_list))
+hocus_tab, focus_tab = st.tabs(["Hocus", "Focus"])
 
-focus_state = st.sidebar.radio("focus", ["off", "on"])
-
-if focus_state == "off":
+with hocus_tab:
     html = app_utils.get_full_code_html(lines_numbers_list, file_content)
-else:
-    html = app_utils.get_focused_code_html(lines_numbers_list, file_lines)
+    components.html(html, height=400, width=800, scrolling=True)
 
-components.html(html, height=400, width=800, scrolling=True)
+with focus_tab:
+    html = app_utils.get_focused_code_html(lines_numbers_list, file_lines)
+    components.html(html, height=400, width=800, scrolling=True)
