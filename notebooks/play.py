@@ -20,10 +20,9 @@ class A:
         b, mm = 8 + self.k + self.m.c, self.k
         pass
 
-    @staticmethod
-    def run(
-            n)\
+    def run(self, n)\
             -> int:
+        self.m.c = 680
         a = 5
         b = a + 7 + 5.0
         ll = a + 6.4

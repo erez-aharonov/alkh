@@ -12,18 +12,7 @@ class CallGraphManager:
         self._calc_assignment_df()
         self._calc_dependency_graph()
 
-    def get_variable_affecting_lines_numbers(self, line_number: int) -> List[int]:
-        # a_series = self._assignment_df.query(f"line == {line_number}").iloc[0]
-        # graph_node_name = a_series['hash_name']
-        # ancestors = nx.ancestors(self._dependency_graph, graph_node_name)
-        # ancestors_df = self._get_ancestors_call_df(ancestors, graph_node_name)
-        # lines_numbers_list = self._get_lines_numbers_list(ancestors_df)
-        # scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
-        # final_lines_numbers_list = \
-        #     self._get_sorted_final_lines_numbers_list(
-        #         lines_numbers_list,
-        #         scope_hierarchy_starts_list)
-
+    def get_lines_numbers_affecting_line_number(self, line_number: int) -> List[int]:
         target_id_to_line_numbers_df = self._target_id_to_line_numbers_df
         lines_contains_series = target_id_to_line_numbers_df['line_numbers_list'].apply(lambda x: line_number in x)
         line_targets_list = target_id_to_line_numbers_df[lines_contains_series]['target_id'].to_list()
@@ -36,7 +25,12 @@ class CallGraphManager:
         relevant_targets_lines = relevant_target_id_to_line_numbers_df[
             'line_numbers_list'].explode().sort_values().unique().tolist()
 
-        final_lines_numbers_list = relevant_targets_lines
+        scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
+        final_lines_numbers_list = \
+            self._get_sorted_final_lines_numbers_list(
+                relevant_targets_lines,
+                scope_hierarchy_starts_list)
+
         return final_lines_numbers_list
 
     def _calc_base_objects(self, file_path):
