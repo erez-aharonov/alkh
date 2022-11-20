@@ -29,16 +29,30 @@ class CallGraphManager:
         self._calc_dependency_graph()
 
     def get_variable_affecting_lines_numbers(self, line_number: int) -> List[int]:
-        a_series = self._assignment_df.query(f"line == {line_number}").iloc[0]
-        graph_node_name = a_series['hash_name']
-        ancestors = nx.ancestors(self._dependency_graph, graph_node_name)
-        ancestors_df = self._get_ancestors_call_df(ancestors, graph_node_name)
-        lines_numbers_list = self._get_lines_numbers_list(ancestors_df)
-        scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
-        final_lines_numbers_list = \
-            self._get_sorted_final_lines_numbers_list(
-                lines_numbers_list,
-                scope_hierarchy_starts_list)
+        # a_series = self._assignment_df.query(f"line == {line_number}").iloc[0]
+        # graph_node_name = a_series['hash_name']
+        # ancestors = nx.ancestors(self._dependency_graph, graph_node_name)
+        # ancestors_df = self._get_ancestors_call_df(ancestors, graph_node_name)
+        # lines_numbers_list = self._get_lines_numbers_list(ancestors_df)
+        # scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(line_number, self._scopes_df)
+        # final_lines_numbers_list = \
+        #     self._get_sorted_final_lines_numbers_list(
+        #         lines_numbers_list,
+        #         scope_hierarchy_starts_list)
+
+        target_id_to_line_numbers_df = self._target_id_to_line_numbers_df
+        lines_contains_series = target_id_to_line_numbers_df['line_numbers_list'].apply(lambda x: line_number in x)
+        line_targets_list = target_id_to_line_numbers_df[lines_contains_series]['target_id'].to_list()
+        lst = [nx.ancestors(self._dependency_graph, target) for target in line_targets_list]
+        influencing_targets_set = set().union(*lst)
+        relevant_targets_set = influencing_targets_set.union(set(line_targets_list))
+        is_relevant_targets_series = target_id_to_line_numbers_df['target_id'].apply(
+            lambda x: x in relevant_targets_set)
+        relevant_target_id_to_line_numbers_df = target_id_to_line_numbers_df[is_relevant_targets_series]
+        relevant_targets_lines = relevant_target_id_to_line_numbers_df[
+            'line_numbers_list'].explode().sort_values().unique().tolist()
+
+        final_lines_numbers_list = relevant_targets_lines
         return final_lines_numbers_list
 
     def _calc_base_objects(self, file_path):
@@ -67,7 +81,70 @@ class CallGraphManager:
         assignment_df['sources'] = assignment_df['data'].apply(self._get_sources_from_data)
         assignment_df["scope_index"] = assignment_df["line"].apply(self._get_scope_index, args=(self._scopes_df,))
         assignment_df['canonic_targets'] = assignment_df.apply(self._get_canonic_target_list, axis=1)
+
+        scope_to_targets_df, target_id_to_line_numbers_df = self._calc_scope_to_targets_df(assignment_df)
+
+        assignment_df["canonic_sources"] = \
+            assignment_df.apply(
+                self._get_canonic_source_list,
+                args=(scope_to_targets_df,),
+                axis=1)
+        assignment_df["canonic_targets_ids"] = \
+            assignment_df["canonic_targets"].apply(
+                self._get_targets_ids_list)
+
         self._assignment_df = assignment_df
+        self._target_id_to_line_numbers_df = target_id_to_line_numbers_df
+
+    @staticmethod
+    def _get_targets_ids_list(target_dict_list):
+        return [target_dict["id"] for target_dict in target_dict_list]
+
+    def _calc_scope_to_targets_df(self, assignment_df):
+        canonic_targets_list = assignment_df["canonic_targets"].explode().tolist()
+        canonic_targets_df = pd.DataFrame(canonic_targets_list)
+        canonic_targets_df["main_id"] = canonic_targets_df["id"].apply(lambda x: x[1])
+        canonic_targets_lines_df = \
+            canonic_targets_df.groupby(["scope_index", "main_id"])["line_number"].apply(list).reset_index()
+        scope_index_to_target_id_df = \
+            canonic_targets_lines_df.groupby("scope_index")["main_id"].apply(tuple).reset_index()
+        scope_to_targets_df = self._scopes_df.merge(scope_index_to_target_id_df)
+
+        canonic_targets_lines_df['target_id'] = \
+            canonic_targets_lines_df.apply(lambda x: (x['scope_index'], x['main_id']), axis=1)
+
+        temp_target_id_to_line_numbers_df = canonic_targets_lines_df[['target_id', 'line_number']]
+        target_id_to_line_numbers_df = \
+            temp_target_id_to_line_numbers_df.rename(columns={'line_number': 'line_numbers_list'}).copy()
+
+        return scope_to_targets_df, target_id_to_line_numbers_df
+
+    def _get_canonic_source_list(self, assignment_series, scope_to_targets_df):
+        line_number = assignment_series['line']
+
+        canonic_source_list = []
+        for source in assignment_series['sources']:
+            canonic_source = self._get_canonic_source(source, line_number, scope_to_targets_df)
+            if canonic_source is not None:
+                canonic_source_list.append(canonic_source)
+
+        return canonic_source_list
+
+    def _get_canonic_source(self,source, line_number, scope_to_targets_df):
+        if source[0] == 'self':
+            class_scope_index = self._get_scope_index(line_number, self._class_scopes_df)
+            canonic_source = tuple([class_scope_index] + source[1:])
+        else:
+            query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
+            all_scopes_df = scope_to_targets_df.query(query_string).sort_values("length")
+            contains_source = all_scopes_df["main_id"].apply(lambda x: source[0] in x)
+            contains_source_scopes_df = all_scopes_df[contains_source]
+            if not contains_source_scopes_df.empty:
+                source_scope_index = contains_source_scopes_df.iloc[0]["scope_index"]
+                canonic_source = tuple([source_scope_index] + source)
+            else:
+                canonic_source = None
+        return canonic_source
 
     @staticmethod
     def _is_class_scope(obj):
@@ -161,15 +238,28 @@ class CallGraphManager:
 
     def _calc_dependency_graph(self):
         assignment_df = self._assignment_df
-        var_names = self._get_all_variables_names(assignment_df)
+        target_id_to_line_numbers_df = self._target_id_to_line_numbers_df
+
         di_graph = nx.DiGraph()
+
+        var_names = target_id_to_line_numbers_df['target_id']
         for name in var_names:
             di_graph.add_node(name)
-        for index, a_series in assignment_df.iterrows():
-            scope_index = a_series["scope_index"]
-            if a_series['assigner']:
-                for assigner in a_series['assigner']:
-                    di_graph.add_edge((assigner, scope_index), (a_series['assigned'], scope_index))
+
+        for index, row_series in assignment_df.iterrows():
+            for source in row_series['canonic_sources']:
+                for target in row_series['canonic_targets_ids']:
+                    di_graph.add_edge(source[:2], target[:2])
+
+        # var_names = self._get_all_variables_names(assignment_df)
+        # di_graph = nx.DiGraph()
+        # for name in var_names:
+        #     di_graph.add_node(name)
+        # for index, a_series in assignment_df.iterrows():
+        #     scope_index = a_series["scope_index"]
+        #     if a_series['assigner']:
+        #         for assigner in a_series['assigner']:
+        #             di_graph.add_edge((assigner, scope_index), (a_series['assigned'], scope_index))
         self._dependency_graph = di_graph
 
     @staticmethod
