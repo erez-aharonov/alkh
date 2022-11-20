@@ -11,7 +11,7 @@ class A:
     k = 8
     m = pd.Series({"c": 20})
     m.c = 50
-    ll = 300
+    ll = 301
 
     def __init__(self):
         self.m.c = 60
