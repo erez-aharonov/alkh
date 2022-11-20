@@ -15,21 +15,12 @@ file_content = "".join(file_lines)
 call_graph_manager = cst_utils.CallGraphManager(file_path)
 
 line_number = st.sidebar.number_input('line number', min_value=1, max_value=len(file_lines))
-# variable_name = cst_utils.get_variable_name(file_lines[int(line_number) - 1])
-# if variable_name is None:
-#     variable_name = "None"
-#     lines_numbers_list = [line_number]
-#     lines_numbers_string = line_number
-# else:
-#     lines_numbers_list = call_graph_manager.get_variable_affecting_lines_numbers(line_number)
-#     lines_numbers_string = ",".join(map(str, lines_numbers_list))
 
 lines_numbers_list = call_graph_manager.get_variable_affecting_lines_numbers(line_number)
 if not lines_numbers_list:
     lines_numbers_list = [line_number]
 lines_numbers_string = ",".join(map(str, lines_numbers_list))
 
-# st.sidebar.text(f"variable name: {variable_name}")
 focus_state = st.sidebar.radio("focus", ["off", "on"])
 
 if focus_state == "off":

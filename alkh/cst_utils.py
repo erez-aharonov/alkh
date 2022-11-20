@@ -5,22 +5,6 @@ import numpy as np
 import pandas as pd
 
 
-def get_variable_name(a_line: str):
-    try:
-        line_cst = cst.parse_module(a_line.strip())
-        collector = AssignedCollector()
-        line_cst.visit(collector)
-        if not collector.names:
-            return None
-        elif not collector.names[0]:
-            return None
-        else:
-            variable_name = collector.names[0][0]
-            return variable_name
-    except:
-        return None
-
-
 class CallGraphManager:
     def __init__(self, file_path):
         self._calc_base_objects(file_path)
@@ -290,16 +274,6 @@ class CallGraphManager:
             canonic_target_list.append(canonic_target)
 
         return canonic_target_list
-
-
-class AssignedCollector(cst.CSTVisitor):
-    def __init__(self):
-        super().__init__()
-        self.names: List[List] = []
-
-    def visit_Assign(self, node: cst.FunctionDef) -> None:
-        targets = [target.target.value for target in node.targets]
-        self.names.append(targets)
 
 
 class AssignCollector(cst.CSTVisitor):
