@@ -17,25 +17,47 @@ class CallGraphManager:
         lines_contains_series = target_id_to_line_numbers_df['line_numbers_list'].apply(lambda x: line_number in x)
         line_targets_list = target_id_to_line_numbers_df[lines_contains_series]['target_id'].to_list()
         if line_targets_list:
-            lst = [nx.ancestors(self._dependency_graph, target) for target in line_targets_list]
-            influencing_targets_set = set().union(*lst)
-            relevant_targets_set = influencing_targets_set.union(set(line_targets_list))
-            is_relevant_targets_series = target_id_to_line_numbers_df['target_id'].apply(
-                lambda x: x in relevant_targets_set)
-            relevant_target_id_to_line_numbers_df = target_id_to_line_numbers_df[is_relevant_targets_series]
-            relevant_targets_lines = relevant_target_id_to_line_numbers_df[
-                'line_numbers_list'].explode().sort_values().unique().tolist()
-
-            scope_hierarchy_starts_list = self._get_scope_hierarchy_starts_list(relevant_targets_lines, self._scopes_df)
             final_lines_numbers_list = \
-                self._get_sorted_final_lines_numbers_list(
-                    relevant_targets_lines,
-                    scope_hierarchy_starts_list)
+                self._get_lines_numbers_affecting_line_number_with_targets(
+                    line_targets_list,
+                    target_id_to_line_numbers_df)
 
         else:
             final_lines_numbers_list = [line_number]
 
         return final_lines_numbers_list
+
+    def _get_lines_numbers_affecting_line_number_with_targets(self, line_targets_list, target_id_to_line_numbers_df):
+        relevant_targets_lines_numbers_list = \
+            self._get_relevant_targets_lines_numbers_list(
+                line_targets_list,
+                target_id_to_line_numbers_df)
+        scope_hierarchy_starts_list = \
+            self._get_scope_hierarchy_starts_list(
+                relevant_targets_lines_numbers_list,
+                self._scopes_df)
+        final_lines_numbers_list = \
+            self._get_sorted_final_lines_numbers_list(
+                relevant_targets_lines_numbers_list,
+                scope_hierarchy_starts_list)
+        return final_lines_numbers_list
+
+    def _get_relevant_targets_lines_numbers_list(self, line_targets_list, target_id_to_line_numbers_df):
+        targets_sets_list = [nx.ancestors(self._dependency_graph, target) for target in line_targets_list]
+        influencing_targets_set = set().union(*targets_sets_list)
+        relevant_targets_set = influencing_targets_set.union(set(line_targets_list))
+        is_relevant_targets_series = \
+            target_id_to_line_numbers_df['target_id'].apply(
+                self._is_in_targets_set,
+                args=(relevant_targets_set,))
+        relevant_target_id_to_line_numbers_df = target_id_to_line_numbers_df[is_relevant_targets_series]
+        relevant_targets_lines = \
+            relevant_target_id_to_line_numbers_df['line_numbers_list'].explode().sort_values().unique().tolist()
+        return relevant_targets_lines
+
+    @staticmethod
+    def _is_in_targets_set(target_id, targets_set):
+        return target_id in targets_set
 
     def _calc_base_objects(self, file_path):
         file_lines = open(file_path, 'r').readlines()
@@ -238,15 +260,6 @@ class CallGraphManager:
                 for target in row_series['canonic_targets_ids']:
                     di_graph.add_edge(source[:2], target[:2])
 
-        # var_names = self._get_all_variables_names(assignment_df)
-        # di_graph = nx.DiGraph()
-        # for name in var_names:
-        #     di_graph.add_node(name)
-        # for index, a_series in assignment_df.iterrows():
-        #     scope_index = a_series["scope_index"]
-        #     if a_series['assigner']:
-        #         for assigner in a_series['assigner']:
-        #             di_graph.add_edge((assigner, scope_index), (a_series['assigned'], scope_index))
         self._dependency_graph = di_graph
 
     @staticmethod
