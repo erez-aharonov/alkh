@@ -1,4 +1,5 @@
 from typing import *
+import itertools
 import libcst as cst
 import networkx as nx
 import numpy as np
@@ -14,7 +15,7 @@ class CallGraphManager:
 
     def get_lines_numbers_affecting_line_number(self, line_number: int) -> List[int]:
         target_id_to_line_numbers_df = self._target_id_to_line_numbers_df
-        lines_contains_series = target_id_to_line_numbers_df['line_numbers_list'].apply(lambda x: line_number in x)
+        lines_contains_series = target_id_to_line_numbers_df['lines_numbers_list'].apply(lambda x: line_number in x)
         line_targets_list = target_id_to_line_numbers_df[lines_contains_series]['target_id'].to_list()
         if line_targets_list:
             final_lines_numbers_list = \
@@ -52,7 +53,7 @@ class CallGraphManager:
                 args=(relevant_targets_set,))
         relevant_target_id_to_line_numbers_df = target_id_to_line_numbers_df[is_relevant_targets_series]
         relevant_targets_lines = \
-            relevant_target_id_to_line_numbers_df['line_numbers_list'].explode().sort_values().unique().tolist()
+            relevant_target_id_to_line_numbers_df['lines_numbers_list'].explode().sort_values().unique().tolist()
         return relevant_targets_lines
 
     @staticmethod
@@ -81,9 +82,9 @@ class CallGraphManager:
     def _calc_assignment_df(self):
         visitor = AssignCollector(self._ranges)
         self._wrapper.visit(visitor)
-        assignment_df = pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'line'])
+        assignment_df = pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'start_line', 'end_line'])
         assignment_df['sources'] = assignment_df['data'].apply(self._get_sources_from_data)
-        assignment_df["scope_index"] = assignment_df["line"].apply(self._get_scope_index, args=(self._scopes_df,))
+        assignment_df["scope_index"] = assignment_df["start_line"].apply(self._get_scope_index, args=(self._scopes_df,))
         assignment_df['canonic_targets'] = assignment_df.apply(self._get_canonic_target_list, axis=1)
 
         scope_to_targets_df, target_id_to_line_numbers_df = self._calc_scope_to_targets_df(assignment_df)
@@ -107,24 +108,40 @@ class CallGraphManager:
     def _calc_scope_to_targets_df(self, assignment_df):
         canonic_targets_list = assignment_df["canonic_targets"].explode().tolist()
         canonic_targets_df = pd.DataFrame(canonic_targets_list)
-        canonic_targets_df["main_id"] = canonic_targets_df["id"].apply(lambda x: x[1])
+        canonic_targets_df["main_id"] = canonic_targets_df["id"].apply(self._get_main_id)
+        canonic_targets_df['lines_numbers_list'] = canonic_targets_df.apply(self._get_lines_range, axis=1)
         canonic_targets_lines_df = \
-            canonic_targets_df.groupby(["scope_index", "main_id"])["line_number"].apply(list).reset_index()
+            canonic_targets_df.groupby(["scope_index", "main_id"])["lines_numbers_list"].apply(
+                self._flatten_iterable_of_iterable).reset_index()
         scope_index_to_target_id_df = \
             canonic_targets_lines_df.groupby("scope_index")["main_id"].apply(tuple).reset_index()
         scope_to_targets_df = self._scopes_df.merge(scope_index_to_target_id_df)
 
-        canonic_targets_lines_df['target_id'] = \
-            canonic_targets_lines_df.apply(lambda x: (x['scope_index'], x['main_id']), axis=1)
+        canonic_targets_lines_df['target_id'] = canonic_targets_lines_df.apply(self._get_target_id, axis=1)
 
-        temp_target_id_to_line_numbers_df = canonic_targets_lines_df[['target_id', 'line_number']]
-        target_id_to_line_numbers_df = \
-            temp_target_id_to_line_numbers_df.rename(columns={'line_number': 'line_numbers_list'}).copy()
+        target_id_to_line_numbers_df = canonic_targets_lines_df[['target_id', 'lines_numbers_list']]
 
         return scope_to_targets_df, target_id_to_line_numbers_df
 
+    @staticmethod
+    def _get_main_id(id_tuple):
+        return id_tuple[1]
+
+    @staticmethod
+    def _get_lines_range(a_series):
+        lines_range = list(range(a_series['start_line_number'], a_series['end_line_number'] + 1))
+        return lines_range
+
+    @staticmethod
+    def _flatten_iterable_of_iterable(iterable_of_iterable):
+        return list(itertools.chain(*iterable_of_iterable))
+
+    @staticmethod
+    def _get_target_id(a_series):
+        return (a_series['scope_index'], a_series['main_id'])
+
     def _get_canonic_source_list(self, assignment_series, scope_to_targets_df):
-        line_number = assignment_series['line']
+        line_number = assignment_series['start_line']
 
         canonic_source_list = []
         for source in assignment_series['sources']:
@@ -134,7 +151,7 @@ class CallGraphManager:
 
         return canonic_source_list
 
-    def _get_canonic_source(self,source, line_number, scope_to_targets_df):
+    def _get_canonic_source(self, source, line_number, scope_to_targets_df):
         if source[0] == 'self':
             class_scope_index = self._get_scope_index(line_number, self._class_scopes_df)
             canonic_source = tuple([class_scope_index] + source[1:])
@@ -149,6 +166,7 @@ class CallGraphManager:
             else:
                 canonic_source = None
         return canonic_source
+
 
     @staticmethod
     def _is_class_scope(obj):
@@ -181,7 +199,7 @@ class CallGraphManager:
 
     @staticmethod
     def _get_lines_numbers_list(ancestors_df: pd.DataFrame):
-        return list(ancestors_df['line'].values)
+        return list(ancestors_df['start_line'].values)
 
     def _calc_scopes_and_class_scopes_df(self, file_number_of_lines, ranges, scopes):
         scopes_series = pd.Series(list(scopes)).to_frame('scope')
@@ -269,24 +287,26 @@ class CallGraphManager:
         scope_index = relevant_scoped_df.iloc[0]['scope_index']
         return scope_index
 
-    def _get_canonic_target(self, target, line_number, scope_index):
+    def _get_canonic_target(self, target, start_line_number, end_line_number, scope_index):
         if target[0] == 'self':
-            class_scope_index = self._get_scope_index(line_number, self._class_scopes_df)
+            class_scope_index = self._get_scope_index(start_line_number, self._class_scopes_df)
             target_id = tuple([class_scope_index] + target[1:])
             canonic_target = {'self': True, 'scope_index':  class_scope_index, 'id': target_id}
         else:
             target_id = tuple([scope_index] + target)
             canonic_target = {'self': False, 'scope_index':  scope_index, 'id': target_id}
-        canonic_target["line_number"] = line_number
+        canonic_target["start_line_number"] = start_line_number
+        canonic_target["end_line_number"] = end_line_number
         return canonic_target
 
     def _get_canonic_target_list(self, assignment_series):
         scope_index = assignment_series['scope_index']
-        line_number = assignment_series['line']
+        start_line_number = assignment_series['start_line']
+        end_line_number = assignment_series['end_line']
 
         canonic_target_list = []
         for target in assignment_series['targets']:
-            canonic_target = self._get_canonic_target(target, line_number, scope_index)
+            canonic_target = self._get_canonic_target(target, start_line_number, end_line_number, scope_index)
             canonic_target_list.append(canonic_target)
 
         return canonic_target_list
@@ -302,7 +322,8 @@ class AssignCollector(cst.CSTVisitor):
         return self._assign_info
 
     def visit_Assign(self, node: cst.FunctionDef) -> None:
-        pos = self._ranges[node].start
+        pos_start = self._ranges[node].start
+        pos_end = self._ranges[node].end
         value_collector = ValueCollector()
         node.value.visit(value_collector)
         value_dict = {'names': value_collector.names, 'ints': value_collector.ints, 'floats': value_collector.floats}
@@ -311,7 +332,7 @@ class AssignCollector(cst.CSTVisitor):
             target.visit(target_collector)
             names_list = target_collector.names
             if names_list:
-                self._assign_info.append((target_collector.names, value_dict, pos.line))
+                self._assign_info.append((target_collector.names, value_dict, pos_start.line, pos_end.line))
 
 
 class ValueCollector(cst.CSTVisitor):
@@ -335,9 +356,17 @@ class ValueCollector(cst.CSTVisitor):
     def visit_Attribute(self, node: cst.FunctionDef) -> None:
         self._attribute_level += 1
 
+    def visit_Subscript(self, node: cst.FunctionDef) -> None:
+        self._attribute_level += 1
+
     def leave_Attribute(self, node: cst.FunctionDef) -> None:
         if isinstance(node.value, cst.Name):
             self.names.append([node.value.value, node.attr.value])
         else:
             self.names[len(self.names) - 1].append(node.attr.value)
+        self._attribute_level -= 1
+
+    def leave_Subscript(self, node: cst.FunctionDef) -> None:
+        if isinstance(node.value, cst.Name):
+            self.names.append([node.value.value])
         self._attribute_level -= 1

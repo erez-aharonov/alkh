@@ -18,4 +18,5 @@ def analyze():
     relevant_file_names_series = file_names_series[~file_names_series.str.contains('|'.join(ignore_stack_list))].copy()
     caller_file_path = relevant_file_names_series.iloc[0]
     print(caller_file_path)
+    # caller_file_path = '/mnt/dev/azure_projects/ATool/core/aoi_defects_clustering/aoi_defect_clustering.py'
     subprocess.run([f"{sys.executable}", "-m", "streamlit", "run", app_file_path, "--", caller_file_path])

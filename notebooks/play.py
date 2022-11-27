@@ -17,7 +17,8 @@ class A:
         self.m.c = 60
         self.ll = 400
         self.k, ll = 9, 10 + jj
-        b, mm = 8 + self.k + self.m.c, self.k
+        b, mm = \
+            8 + self.k + self.m.c, self.k
         pass
 
     def run(self, n)\
