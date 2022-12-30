@@ -3,7 +3,9 @@ if \
     pass
 elif 2:
     pass
-elif 3:
+elif 3\
+        :
     pass
-else:
+else\
+        :
     pass

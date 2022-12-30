@@ -25,11 +25,15 @@ class A:
             -> int:
         self.m.c = 680
         a = 5
+        h = 1
         b = a + 7 + 5.0
-        ll = a + 6.4
-        c = a + b + 3
-        d = b + c
-        k = int(d * 2)
+        if h > 1:
+            ll = a + 6.4
+            k = ll
+        else:
+            c = a + b + 3
+            d = b + c
+            k = int(d * 2)
         return k
 
 
