@@ -9,8 +9,8 @@ import pandas as pd
 class CallGraphManager:
     def __init__(self, file_path):
         self._calc_base_objects(file_path)
-        self._calc_scopes_df()
         self._calc_extended_scopes_df()
+        self._calc_scopes_df()
         self._calc_assignment_df()
         self._calc_dependency_graph()
 
@@ -34,11 +34,10 @@ class CallGraphManager:
             self._get_relevant_targets_lines_numbers_list(
                 line_targets_list,
                 target_id_to_line_numbers_df)
-        full_scopes_df = pd.concat([self._scopes_df, self._extended_scopes_df]).reset_index(drop=True)
         scope_hierarchy_starts_list = \
             self._get_scope_hierarchy_starts_list(
                 relevant_targets_lines_numbers_list,
-                full_scopes_df)
+                self._scopes_df)
         final_lines_numbers_list = \
             self._get_sorted_final_lines_numbers_list(
                 relevant_targets_lines_numbers_list,
@@ -75,7 +74,10 @@ class CallGraphManager:
         self._file_number_of_lines = file_number_of_lines
 
     def _calc_scopes_df(self):
-        scopes_df = self._calc_scopes_and_class_scopes_df(self._file_number_of_lines, self._ranges, self._scopes)
+        temp_scopes_df = self._calc_scopes_and_class_scopes_df(self._file_number_of_lines, self._ranges, self._scopes)
+        self._extended_scopes_df["scope_index"] = \
+            range(len(temp_scopes_df), len(temp_scopes_df) + len(self._extended_scopes_df))
+        scopes_df = pd.concat([temp_scopes_df, self._extended_scopes_df]).reset_index(drop=True)
         is_class_scope = scopes_df['scope'].apply(self._is_class_scope)
         class_scopes_df = scopes_df[is_class_scope]
         self._scopes_df = scopes_df
