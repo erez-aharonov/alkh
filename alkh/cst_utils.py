@@ -395,7 +395,22 @@ class IfElseScopeCollector(cst.CSTVisitor):
         head_end_line = self._ranges[node.whitespace_after_test].end.line
         self._add_scope(node, head_end_line)
 
-    def visit_Else(self, node: cst.If) -> None:
+    def visit_Else(self, node: cst.Else) -> None:
+        self._common_add_scope(node)
+
+    def visit_With(self, node: cst.With) -> None:
+        self._common_add_scope(node)
+
+    def visit_Try(self, node: cst.Try) -> None:
+        self._common_add_scope(node)
+
+    def visit_ExceptHandler(self, node: cst.ExceptHandler) -> None:
+        self._common_add_scope(node)
+
+    def visit_Finally(self, node: cst.Finally) -> None:
+        self._common_add_scope(node)
+
+    def _common_add_scope(self, node):
         head_end_line = self._ranges[node.whitespace_before_colon].end.line
         self._add_scope(node, head_end_line)
 

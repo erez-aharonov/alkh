@@ -29,7 +29,13 @@ class A:
         b = a + 7 + 5.0
         if h > 1:
             ll = a + 6.4
-            k = ll
+            with 1 as t:
+                try:
+                    k = ll + t
+                except ValueError:
+                    pass
+                finally:
+                    pass
         elif h > 0:
             k = b
         else:
