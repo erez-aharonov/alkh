@@ -30,6 +30,8 @@ class A:
         if h > 1:
             ll = a + 6.4
             k = ll
+        elif h > 0:
+            k = b
         else:
             c = a + b + 3
             d = b + c

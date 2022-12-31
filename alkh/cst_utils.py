@@ -10,6 +10,7 @@ class CallGraphManager:
     def __init__(self, file_path):
         self._calc_base_objects(file_path)
         self._calc_scopes_df()
+        self._calc_extended_scopes_df()
         self._calc_assignment_df()
         self._calc_dependency_graph()
 
@@ -33,10 +34,11 @@ class CallGraphManager:
             self._get_relevant_targets_lines_numbers_list(
                 line_targets_list,
                 target_id_to_line_numbers_df)
+        full_scopes_df = pd.concat([self._scopes_df, self._extended_scopes_df]).reset_index(drop=True)
         scope_hierarchy_starts_list = \
             self._get_scope_hierarchy_starts_list(
                 relevant_targets_lines_numbers_list,
-                self._scopes_df)
+                full_scopes_df)
         final_lines_numbers_list = \
             self._get_sorted_final_lines_numbers_list(
                 relevant_targets_lines_numbers_list,
@@ -78,6 +80,15 @@ class CallGraphManager:
         class_scopes_df = scopes_df[is_class_scope]
         self._scopes_df = scopes_df
         self._class_scopes_df = class_scopes_df
+
+    def _calc_extended_scopes_df(self):
+        collector = IfElseScopeCollector(self._ranges)
+        self._wrapper.visit(collector)
+        extended_scopes_df = \
+            pd.DataFrame(
+                collector.scopes,
+                columns=["start_line_number", "header_end_line_number", "end_line_number", "length"])
+        self._extended_scopes_df = extended_scopes_df
 
     def _calc_assignment_df(self):
         visitor = AssignCollector(self._ranges)
@@ -370,3 +381,25 @@ class ValueCollector(cst.CSTVisitor):
         if isinstance(node.value, cst.Name):
             self.names.append([node.value.value])
         self._attribute_level -= 1
+
+
+class IfElseScopeCollector(cst.CSTVisitor):
+    def __init__(self, ranges):
+        super().__init__()
+        self._ranges = ranges
+        self.scopes: List[Tuple] = []
+
+    def visit_If(self, node: cst.If) -> None:
+        head_end_line = self._ranges[node.whitespace_after_test].end.line
+        self._add_scope(node, head_end_line)
+
+    def visit_Else(self, node: cst.If) -> None:
+        head_end_line = self._ranges[node.whitespace_before_colon].end.line
+        self._add_scope(node, head_end_line)
+
+    def _add_scope(self, node, head_end_line):
+        node_range = self._ranges[node]
+        start_line = node_range.start.line
+        end_line = node_range.end.line
+        length = end_line - start_line + 1
+        self.scopes.append((start_line, head_end_line, end_line, length))
