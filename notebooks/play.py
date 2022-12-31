@@ -31,10 +31,12 @@ class A:
             ll = a + 6.4
             with 1 as t:
                 try:
-                    k = ll + t
+                    for g in [0, 1]:
+                        k = ll + t + g
                 except ValueError:
                     pass
                 finally:
+                    k = 20
                     pass
         elif h > 0:
             k = b
