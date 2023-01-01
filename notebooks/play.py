@@ -36,7 +36,11 @@ class A:
                 except ValueError:
                     pass
                 finally:
-                    k = 20
+                    mm = 0
+                    k = 0
+                    while mm < 5:
+                        mm += 1
+                        k = mm
                     pass
         elif h > 0:
             k = b

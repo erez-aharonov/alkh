@@ -413,6 +413,9 @@ class IfElseScopeCollector(cst.CSTVisitor):
     def visit_For(self, node: cst.For) -> None:
         self._common_add_scope(node)
 
+    def visit_While(self, node: cst.While) -> None:
+        self._common_add_scope(node)
+
     def _common_add_scope(self, node):
         head_end_line = self._ranges[node.whitespace_before_colon].end.line
         self._add_scope(node, head_end_line)

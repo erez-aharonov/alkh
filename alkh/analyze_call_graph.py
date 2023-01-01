@@ -17,5 +17,4 @@ def analyze():
         ['ipython', 'pycharm', 'site-packages', 'pydev', r'alkh\\analyze_call_graph.py', 'alkh/analyze_call_graph.py']
     relevant_file_names_series = file_names_series[~file_names_series.str.contains('|'.join(ignore_stack_list))].copy()
     caller_file_path = relevant_file_names_series.iloc[0]
-    print(caller_file_path)
     subprocess.run([f"{sys.executable}", "-m", "streamlit", "run", app_file_path, "--", caller_file_path])
