@@ -4,6 +4,7 @@ import libcst as cst
 import networkx as nx
 import numpy as np
 import pandas as pd
+from alkh.utils import code_range_utils
 
 
 class CallGraphManager:
@@ -84,20 +85,21 @@ class CallGraphManager:
         self._class_scopes_df = class_scopes_df
 
     def _calc_extended_scopes_df(self):
-        collector = IfElseScopeCollector(self._ranges)
+        collector = ExtendedScopesCollector(self._ranges)
         self._wrapper.visit(collector)
         extended_scopes_df = \
             pd.DataFrame(
                 collector.scopes,
-                columns=["start_line_number", "header_end_line_number", "end_line_number", "length"])
+                columns=["start_line_number", "header_end_line_number", "end_line_number", "length", "node_range"])
         self._extended_scopes_df = extended_scopes_df
 
     def _calc_assignment_df(self):
         visitor = AssignCollector(self._ranges)
         self._wrapper.visit(visitor)
-        assignment_df = pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'start_line', 'end_line'])
+        assignment_df = \
+            pd.DataFrame(visitor.get_info(), columns=['targets', 'data', 'start_line', 'end_line', 'node_range'])
         assignment_df['sources'] = assignment_df['data'].apply(self._get_sources_from_data)
-        assignment_df["scope_index"] = assignment_df["start_line"].apply(self._get_scope_index, args=(self._scopes_df,))
+        assignment_df["scope_index"] = assignment_df["node_range"].apply(self._get_scope_index, args=(self._scopes_df,))
         assignment_df['canonic_targets'] = assignment_df.apply(self._get_canonic_target_list, axis=1)
 
         scope_to_targets_df, target_id_to_line_numbers_df = self._calc_scope_to_targets_df(assignment_df)
@@ -166,7 +168,7 @@ class CallGraphManager:
 
     def _get_canonic_source(self, source, line_number, scope_to_targets_df):
         if source[0] == 'self':
-            class_scope_index = self._get_scope_index(line_number, self._class_scopes_df)
+            class_scope_index = self._get_scope_index_for_self_objects(line_number, self._class_scopes_df)
             canonic_source = tuple([class_scope_index] + source[1:])
         else:
             query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
@@ -188,7 +190,7 @@ class CallGraphManager:
 
     @staticmethod
     def _get_sorted_final_lines_numbers_list(lines_numbers_list, scope_hierarchy_starts_list):
-        return list(np.sort(np.array(scope_hierarchy_starts_list + lines_numbers_list)))
+        return list(np.sort(np.array(list(set(scope_hierarchy_starts_list + lines_numbers_list)))))
 
     def _get_scope_hierarchy_starts_list(self, lines_numbers_list, scopes_df):
         temp_total_lines_numbers_list = []
@@ -226,14 +228,18 @@ class CallGraphManager:
             end_line_number = file_number_of_lines
             scope_name = 'global'
             header_end_line_number = start_line_number
+            node_range = None
         else:
             start_line_number = self._get_start_line_number(ranges, scope)
             end_line_number = ranges[scope.node].end.line
             scope_name = scope.name
             header_end_line_number = self._get_header_end_line_number(ranges, scope, start_line_number)
+            node_range = ranges[scope.node]
         scope_length = end_line_number - start_line_number + 1
-        values = [scope, start_line_number, end_line_number, header_end_line_number, scope_length, scope_name]
-        names = ["scope", "start_line_number", "end_line_number", "header_end_line_number", "length", "name"]
+        values = \
+            [scope, start_line_number, end_line_number, header_end_line_number, scope_length, scope_name, node_range]
+        names = \
+            ["scope", "start_line_number", "end_line_number", "header_end_line_number", "length", "name", "node_range"]
         output_series = pd.Series(values, index=names)
         return output_series
 
@@ -294,7 +300,7 @@ class CallGraphManager:
         self._dependency_graph = di_graph
 
     @staticmethod
-    def _get_scope_index(line_number, scopes_df):
+    def _get_scope_index_for_self_objects(line_number, scopes_df):
         query_string = f"start_line_number <= {line_number} and end_line_number >= {line_number}"
         relevant_scoped_df = scopes_df.query(query_string).sort_values("length")
         scope_index = relevant_scoped_df.iloc[0]['scope_index']
@@ -302,7 +308,7 @@ class CallGraphManager:
 
     def _get_canonic_target(self, target, start_line_number, end_line_number, scope_index):
         if target[0] == 'self':
-            class_scope_index = self._get_scope_index(start_line_number, self._class_scopes_df)
+            class_scope_index = self._get_scope_index_for_self_objects(start_line_number, self._class_scopes_df)
             target_id = tuple([class_scope_index] + target[1:])
             canonic_target = {'self': True, 'scope_index':  class_scope_index, 'id': target_id}
         else:
@@ -324,6 +330,21 @@ class CallGraphManager:
 
         return canonic_target_list
 
+    @staticmethod
+    def does_scope_contain_assignment(scope_range, assignment_node_range):
+        if scope_range is not None:
+            result = code_range_utils.check_code_range_a_is_within_b(assignment_node_range, scope_range)
+        else:
+            result = True
+        return result
+
+    def _get_scope_index(self, assignment_node_range, scopes_df):
+        does_contain_series = \
+            scopes_df["node_range"].apply(self.does_scope_contain_assignment, args=(assignment_node_range,))
+        relevant_scoped_df = scopes_df[does_contain_series].sort_values("length")
+        scope_index = relevant_scoped_df.iloc[0]['scope_index']
+        return scope_index
+
 
 class AssignCollector(cst.CSTVisitor):
     def __init__(self, ranges):
@@ -334,18 +355,20 @@ class AssignCollector(cst.CSTVisitor):
     def get_info(self):
         return self._assign_info
 
-    def visit_Assign(self, node: cst.FunctionDef) -> None:
+    def visit_Assign(self, node: cst.Assign) -> None:
         pos_start = self._ranges[node].start
         pos_end = self._ranges[node].end
         value_collector = ValueCollector()
         node.value.visit(value_collector)
         value_dict = {'names': value_collector.names, 'ints': value_collector.ints, 'floats': value_collector.floats}
         for target in node.targets:
+            target_range = self._ranges[target]
             target_collector = ValueCollector()
             target.visit(target_collector)
             names_list = target_collector.names
             if names_list:
-                self._assign_info.append((target_collector.names, value_dict, pos_start.line, pos_end.line))
+                self._assign_info.append(
+                    (target_collector.names, value_dict, pos_start.line, pos_end.line, target_range))
 
 
 class ValueCollector(cst.CSTVisitor):
@@ -375,7 +398,7 @@ class ValueCollector(cst.CSTVisitor):
     def leave_Attribute(self, node: cst.FunctionDef) -> None:
         if isinstance(node.value, cst.Name):
             self.names.append([node.value.value, node.attr.value])
-        else:
+        elif len(self.names) > 0:
             self.names[len(self.names) - 1].append(node.attr.value)
         self._attribute_level -= 1
 
@@ -385,7 +408,7 @@ class ValueCollector(cst.CSTVisitor):
         self._attribute_level -= 1
 
 
-class IfElseScopeCollector(cst.CSTVisitor):
+class ExtendedScopesCollector(cst.CSTVisitor):
     def __init__(self, ranges):
         super().__init__()
         self._ranges = ranges
@@ -425,4 +448,4 @@ class IfElseScopeCollector(cst.CSTVisitor):
         start_line = node_range.start.line
         end_line = node_range.end.line
         length = end_line - start_line + 1
-        self.scopes.append((start_line, head_end_line, end_line, length))
+        self.scopes.append((start_line, head_end_line, end_line, length, node_range))

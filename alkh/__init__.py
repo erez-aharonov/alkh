@@ -1,5 +1,5 @@
 from alkh.dump_data import take_it_offline
-from alkh.print_utils import print_context
+from alkh.utils.print_utils import print_context
 from alkh.analyze_call_graph import analyze
 
 

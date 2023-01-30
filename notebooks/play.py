@@ -32,7 +32,8 @@ class A:
             with 1 as t:
                 try:
                     for g in [0, 1]:
-                        k = ll + t + g
+                        k = f"{ll} {t} {g}"
+                        ft = [k1 for k1 in k]
                 except ValueError:
                     pass
                 finally:
