@@ -6,7 +6,7 @@ HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text()
 
-debug_mode = False
+use_min_versions = False
 
 install_requires = [
     "numpy>=1.16.6",
@@ -16,13 +16,13 @@ install_requires = [
     "libcst>=0.4.7",
     "networkx>=2.5.1"]
 
-if debug_mode:
+if use_min_versions:
     install_requires = [cond.replace(">=", "==") for cond in install_requires]
 
 
 setup(
     name="alkh",
-    version="0.4.0",
+    version="0.4.1",
     description="algorithmic python debugging",
     python_requires='>=3.7.2',
     long_description=README,
