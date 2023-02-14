@@ -298,6 +298,7 @@ class CallGraphManager:
                     di_graph.add_edge(source[:2], target[:2])
 
         self._dependency_graph = di_graph
+        pass
 
     @staticmethod
     def _get_scope_index_for_self_objects(line_number, scopes_df):
