@@ -4,7 +4,7 @@ from alkh import logic_core
 from alkh import app_core
 
 
-file_path = "notebooks/play3.py"
+file_path = "tests/analyze_test.py"
 
 file_lines = open(file_path).readlines()
 file_content = "".join(file_lines)
