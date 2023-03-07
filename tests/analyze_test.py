@@ -4,7 +4,7 @@ import pandas as pd
 
 
 jj = 20
-m = 200
+m = 100
 
 
 class A:
