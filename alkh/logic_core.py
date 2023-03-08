@@ -13,6 +13,7 @@ class CallGraphManager:
         self._calc_extended_scopes_df()
         self._calc_scopes_df()
         self._calc_assignment_df()
+        self._calc_call_df()
         self._calc_dependency_graph()
 
     def get_lines_numbers_affecting_line_number(self, line_number: int) -> List[int]:
@@ -228,7 +229,10 @@ class CallGraphManager:
             end_line_number = file_number_of_lines
             scope_name = 'global'
             header_end_line_number = start_line_number
-            node_range = None
+            node_range = \
+                cst._position.CodeRange(
+                    start=cst._position.CodePosition(line=start_line_number, column=0),
+                    end=cst._position.CodePosition(line=end_line_number + 1, column=0))
         else:
             start_line_number = self._get_start_line_number(ranges, scope)
             end_line_number = ranges[scope.node].end.line
@@ -346,6 +350,51 @@ class CallGraphManager:
         scope_index = relevant_scoped_df.iloc[0]['scope_index']
         return scope_index
 
+    def _calc_call_df(self):
+        visitor = CallCollector(self._ranges)
+        self._wrapper.visit(visitor)
+        calls_df = pd.DataFrame(visitor.get_calls(), columns=['target', 'node_range'])
+        calls_df["scope_index"] = calls_df.apply(self._get_scope_index_for_call, axis=1)
+        self._calls_df = calls_df
+
+    def _get_scope_index_for_self_call(self, call_series):
+        node_range = call_series["node_range"]
+        does_contain_in_class_series = self._class_scopes_df["node_range"].apply(
+            code_range_utils.check_code_range_a_contains_b, args=(node_range,))
+        containing_class_series = self._class_scopes_df[does_contain_in_class_series].iloc[0]
+        is_function_scope_df = self._scopes_df["scope"].apply(
+            lambda x: isinstance(x, cst.metadata.scope_provider.FunctionScope))
+        functions_scopes_df = self._scopes_df[is_function_scope_df]
+        is_function_within_class = functions_scopes_df["node_range"].apply(
+            code_range_utils.check_code_range_a_is_within_b, args=(containing_class_series["node_range"],))
+        relevant_functions_scopes_df = functions_scopes_df[is_function_within_class]
+        does_same_name_series = relevant_functions_scopes_df["name"] == call_series["target"][1]
+        relevant_scope_index = relevant_functions_scopes_df[does_same_name_series].iloc[0]["scope_index"]
+        return relevant_scope_index
+
+    def _is_function_global(self, node_range):
+        is_contained_series = \
+            self._scopes_df["node_range"].apply(code_range_utils.check_code_range_a_contains_b, args=(node_range,))
+        is_global = is_contained_series.sum() == 2
+        return is_global
+
+    def _get_scope_index_for_global_call(self, call_series):
+        is_function_scope_df = self._scopes_df["scope"].apply(
+            lambda x: isinstance(x, cst.metadata.scope_provider.FunctionScope))
+        functions_scopes_df = self._scopes_df[is_function_scope_df]
+        is_function_global_series = functions_scopes_df["node_range"].apply(self._is_function_global)
+        global_functions_df = functions_scopes_df[is_function_global_series]
+        does_same_name_series = global_functions_df["name"] == call_series["target"][0]
+        relevant_scope_index = global_functions_df[does_same_name_series].iloc[0]["scope_index"]
+        return relevant_scope_index
+
+    def _get_scope_index_for_call(self, call_series):
+        if call_series["target"][0] == "self":
+            scope_index = self._get_scope_index_for_self_call(call_series)
+        else:
+            scope_index = self._get_scope_index_for_global_call(call_series)
+        return scope_index
+
 
 class AssignCollector(cst.CSTVisitor):
     def __init__(self, ranges):
@@ -450,3 +499,19 @@ class ExtendedScopesCollector(cst.CSTVisitor):
         end_line = node_range.end.line
         length = end_line - start_line + 1
         self.scopes.append((start_line, head_end_line, end_line, length, node_range))
+
+
+class CallCollector(cst.CSTVisitor):
+    def __init__(self, ranges):
+        super().__init__()
+        self._ranges = ranges
+        self._calls = []
+
+    def get_calls(self):
+        return self._calls
+
+    def visit_Call(self, node: cst.Call) -> None:
+        if isinstance(node.func, cst.Name):
+            self._calls.append(((node.func.value,), self._ranges[node]))
+        elif isinstance(node.func, cst.Attribute):
+            self._calls.append(((node.func.value.value, node.func.attr.value), self._ranges[node]))
