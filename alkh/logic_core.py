@@ -130,10 +130,11 @@ class CallGraphManager:
                 self._flatten_iterable_of_iterable).reset_index()
         scope_index_to_target_id_df = \
             canonic_targets_lines_df.groupby("scope_index")["main_id"].apply(tuple).reset_index()
-        scope_to_targets_df = self._scopes_df.merge(scope_index_to_target_id_df)
+        scope_to_targets_df: pd.DataFrame = self._scopes_df.merge(scope_index_to_target_id_df)
 
         canonic_targets_lines_df['target_id'] = canonic_targets_lines_df.apply(self._get_target_id, axis=1)
 
+        # noinspection PyTypeHints
         target_id_to_line_numbers_df = canonic_targets_lines_df[['target_id', 'lines_numbers_list']]
 
         return scope_to_targets_df, target_id_to_line_numbers_df
@@ -152,8 +153,8 @@ class CallGraphManager:
         return list(itertools.chain(*iterable_of_iterable))
 
     @staticmethod
-    def _get_target_id(a_series):
-        return (a_series['scope_index'], a_series['main_id'])
+    def _get_target_id(a_series) -> Tuple:
+        return a_series['scope_index'], a_series['main_id']
 
     def _get_canonic_source_list(self, assignment_series, scope_to_targets_df):
         line_number = assignment_series['start_line']
@@ -181,7 +182,6 @@ class CallGraphManager:
             else:
                 canonic_source = None
         return canonic_source
-
 
     @staticmethod
     def _is_class_scope(obj):
