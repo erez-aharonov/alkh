@@ -40,11 +40,43 @@ class CallGraphManager:
             self._get_scope_hierarchy_starts_list(
                 relevant_targets_lines_numbers_list,
                 self._scopes_df)
-        final_lines_numbers_list = \
-            self._get_sorted_final_lines_numbers_list(
-                relevant_targets_lines_numbers_list,
-                scope_hierarchy_starts_list)
+        a_list = list(set(scope_hierarchy_starts_list + relevant_targets_lines_numbers_list))
+        scopes_line_numbers_list = self._get_called_functions_lines(a_list)
+        a_list += scopes_line_numbers_list
+        a_list = list(set(a_list))
+        length = len(a_list)
+        proceed = True
+        while proceed:
+            temp_scopes_line_numbers_list = self._get_called_functions_lines(a_list)
+            a_list += temp_scopes_line_numbers_list
+            a_list = list(set(a_list))
+            new_length = len(a_list)
+            proceed = new_length != length
+            length = new_length
+        final_lines_numbers_list = self._get_sorted_lines_numbers_list(a_list)
         return final_lines_numbers_list
+
+    def _get_called_functions_lines(self, final_lines_numbers_list):
+        is_in_lines_series = \
+            self._calls_df["node_range"].apply(self._is_call_in_lines, args=(final_lines_numbers_list,))
+        a = self._calls_df[is_in_lines_series]
+        b = a[["scope_index"]].merge(self._scopes_df)
+        if not b.empty:
+            list_of_lists = b.apply(self._get_whole_scope_lines_numbers, axis=1).tolist()
+            concatenated_list = list(itertools.chain(*list_of_lists))
+        else:
+            concatenated_list = []
+        return concatenated_list
+
+    @staticmethod
+    def _is_call_in_lines(call_range, final_lines_numbers_list):
+        result = any([call_range.start.line <= line <= call_range.end.line for line in final_lines_numbers_list])
+        return result
+
+    @staticmethod
+    def _get_whole_scope_lines_numbers(scope_series):
+        result = list(range(scope_series["start_line_number"], scope_series["end_line_number"] + 1))
+        return result
 
     def _get_relevant_targets_lines_numbers_list(self, line_targets_list, target_id_to_line_numbers_df):
         targets_sets_list = [nx.ancestors(self._dependency_graph, target) for target in line_targets_list]
@@ -190,8 +222,8 @@ class CallGraphManager:
         return result
 
     @staticmethod
-    def _get_sorted_final_lines_numbers_list(lines_numbers_list, scope_hierarchy_starts_list):
-        return list(np.sort(np.array(list(set(scope_hierarchy_starts_list + lines_numbers_list)))))
+    def _get_sorted_lines_numbers_list(lines_numbers_list):
+        return list(np.sort(np.array(lines_numbers_list)))
 
     def _get_scope_hierarchy_starts_list(self, lines_numbers_list, scopes_df):
         temp_total_lines_numbers_list = []
@@ -355,7 +387,7 @@ class CallGraphManager:
         self._wrapper.visit(visitor)
         calls_df = pd.DataFrame(visitor.get_calls(), columns=['target', 'node_range'])
         calls_df["scope_index"] = calls_df.apply(self._get_scope_index_for_call, axis=1)
-        self._calls_df = calls_df
+        self._calls_df = calls_df.dropna()
 
     def _get_scope_index_for_self_call(self, call_series):
         node_range = call_series["node_range"]
@@ -378,17 +410,21 @@ class CallGraphManager:
         is_global = is_contained_series.sum() == 2
         return is_global
 
-    def _get_scope_index_for_global_call(self, call_series):
+    def _get_scope_index_for_global_call(self, call_series) -> Optional[int]:
         is_function_scope_df = self._scopes_df["scope"].apply(
             lambda x: isinstance(x, cst.metadata.scope_provider.FunctionScope))
         functions_scopes_df = self._scopes_df[is_function_scope_df]
         is_function_global_series = functions_scopes_df["node_range"].apply(self._is_function_global)
         global_functions_df = functions_scopes_df[is_function_global_series]
         does_same_name_series = global_functions_df["name"] == call_series["target"][0]
-        relevant_scope_index = global_functions_df[does_same_name_series].iloc[0]["scope_index"]
+        relevant_global_functions_df = global_functions_df[does_same_name_series]
+        if not relevant_global_functions_df.empty:
+            relevant_scope_index = global_functions_df[does_same_name_series].iloc[0]["scope_index"]
+        else:
+            relevant_scope_index = None
         return relevant_scope_index
 
-    def _get_scope_index_for_call(self, call_series):
+    def _get_scope_index_for_call(self, call_series) -> Optional[int]:
         if call_series["target"][0] == "self":
             scope_index = self._get_scope_index_for_self_call(call_series)
         else:

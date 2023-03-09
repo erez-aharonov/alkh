@@ -48,8 +48,9 @@ def get_full_code_html(lines_numbers_list, file_content):
 def get_focused_code_html(lines_numbers_list: List[int], file_lines_list: List[str]):
     file_lines_array = np.array(file_lines_list)
     lines_numbers_array = np.array(lines_numbers_list)
-    relevant_file_lines_list = file_lines_array[lines_numbers_array - 1]
-    file_content = "".join(relevant_file_lines_list)
+    relevant_file_lines_list = list(file_lines_array[lines_numbers_array - 1])
+    pretty_lines_list = _prettify_focused_lines(relevant_file_lines_list)
+    file_content = "".join(pretty_lines_list)
     html = f"""
 <!DOCTYPE html>
 <html>
@@ -65,6 +66,15 @@ def get_focused_code_html(lines_numbers_list: List[int], file_lines_list: List[s
 </html>
 """
     return html
+
+
+def _prettify_focused_lines(line_list: List[str]):
+    pretty_lines_list = []
+    for line in line_list:
+        if "def " in line:
+            pretty_lines_list.append("\n")
+        pretty_lines_list.append(line)
+    return pretty_lines_list
 
 
 def _convert_list_of_number_to_string(lines_numbers_list):
