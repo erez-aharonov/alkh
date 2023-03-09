@@ -60,6 +60,7 @@ class CallGraphManager:
         is_in_lines_series = \
             self._calls_df["node_range"].apply(self._is_call_in_lines, args=(final_lines_numbers_list,))
         a = self._calls_df[is_in_lines_series]
+        # noinspection PyTypeHints
         b = a[["scope_index"]].merge(self._scopes_df)
         if not b.empty:
             list_of_lists = b.apply(self._get_whole_scope_lines_numbers, axis=1).tolist()
@@ -255,6 +256,7 @@ class CallGraphManager:
         scopes_df["scope_index"] = range(len(scopes_df))
         return scopes_df
 
+    # noinspection PyProtectedMember,PyUnresolvedReferences
     def _get_range(self, scope, file_number_of_lines, ranges):
         if isinstance(scope, cst.metadata.scope_provider.GlobalScope):
             start_line_number = 1
