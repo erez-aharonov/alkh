@@ -4,7 +4,8 @@ from alkh import logic_core
 from alkh import app_core
 
 
-file_path = "tests/demo_test.py"
+# file_path = "tests/demo_test.py"
+file_path = "alkh/logic_core.py"
 
 file_lines = open(file_path).readlines()
 file_content = "".join(file_lines)

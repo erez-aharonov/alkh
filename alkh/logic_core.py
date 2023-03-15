@@ -552,4 +552,5 @@ class CallCollector(cst.CSTVisitor):
         if isinstance(node.func, cst.Name):
             self._calls.append(((node.func.value,), self._ranges[node]))
         elif isinstance(node.func, cst.Attribute):
-            self._calls.append(((node.func.value.value, node.func.attr.value), self._ranges[node]))
+            if hasattr(node.func.value, "value") and hasattr(node.func.attr, "value"):
+                self._calls.append(((node.func.value.value, node.func.attr.value), self._ranges[node]))
