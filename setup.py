@@ -22,7 +22,7 @@ if use_min_versions:
 
 setup(
     name="alkh",
-    version="0.4.1",
+    version="0.5.0",
     description="algorithmic python debugging",
     python_requires='>=3.7.2',
     long_description=README,

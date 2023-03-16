@@ -32,7 +32,7 @@ class A:
             with 1 as t:
                 try:
                     for g in [0, 1]:
-                        k = f"{ll} {t} {g}"
+                        k = self._just_do_that(f"{ll} {t} {g}")
                         ft = [k1 for k1 in k]
                 except ValueError:
                     pass
@@ -50,6 +50,13 @@ class A:
             d = b + c
             k = int(d * 2)
         return k
+
+    def _just_do_that(self, k):
+        k2 = self._also_do_that(k)
+        return k2 + "dsd"
+
+    def _also_do_that(self, m):
+        return m + "sdf"
 
 
 class B:

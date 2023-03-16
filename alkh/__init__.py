@@ -3,5 +3,5 @@ from alkh.utils.print_utils import print_context
 from alkh.analyze_call_graph import analyze
 
 
-version_info = (0, 4, 1)
+version_info = (0, 5, 0)
 __version__ = '.'.join(map(str, version_info))
