@@ -5,11 +5,12 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from alkh.utils import code_range_utils
+from alkh.utils import file_utils
 
 
 class CallGraphManager:
-    def __init__(self, file_path):
-        self._calc_base_objects(file_path)
+    def __init__(self, file_wrapper: file_utils.FileWrapper):
+        self._calc_base_objects(file_wrapper)
         self._calc_extended_scopes_df()
         self._calc_scopes_df()
         self._calc_assignment_df()
@@ -96,9 +97,9 @@ class CallGraphManager:
     def _is_in_targets_set(target_id, targets_set):
         return target_id in targets_set
 
-    def _calc_base_objects(self, file_path):
-        file_lines = open(file_path, 'r').readlines()
-        file_content = open(file_path, 'r').read()
+    def _calc_base_objects(self, file_wrapper):
+        file_lines = file_wrapper.file_lines
+        file_content = file_wrapper.file_content
         wrapper = cst.metadata.MetadataWrapper(cst.parse_module(file_content))
         scopes = set(wrapper.resolve(cst.metadata.ScopeProvider).values())
         ranges = wrapper.resolve(cst.metadata.PositionProvider)
