@@ -6,7 +6,7 @@ from alkh import app_core
 from alkh.utils import file_utils
 
 
-def _main(file_path):
+def main_app(file_path):
     file_wrapper = file_utils.FileWrapper(file_path)
 
     uploaded_file = st.sidebar.file_uploader("Please Choose a file", type='py')
@@ -40,4 +40,4 @@ def _create_parser():
 if __name__ == '__main__':
     parser = _create_parser()
     args = parser.parse_args()
-    _main(args.file_path)
+    main_app(args.file_path)
